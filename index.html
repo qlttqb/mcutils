@@ -454,6 +454,7 @@
     color: var(--text2); font-size: 13px; font-weight: 600;
   }
   #calc-loading.visible { display: flex; }
+  #calc-loading span { transition: opacity .3s ease; }
 
   .spinner {
     width: 20px; height: 20px; border-radius: 50%;
@@ -497,7 +498,7 @@
   <div class="header-left">
     <div class="header-badge">⚒ Anvil Calculator</div>
     <h1>Enchantment<br>Order Calculator</h1>
-    <p class="subtitle">Plan the optimal anvil sequence — minimise XP and never see "Too Expensive!" again.</p>
+    <p class="subtitle">Plan the optimal anvil sequence and avoid the "Too Expensive!" warning.</p>
   </div>
   <div class="header-right">
     <div class="search-wrap">
@@ -862,10 +863,12 @@ function selectItem(id) {
   renderEnchantTable();
   updateCalcBtn();
 
-  // Smooth scroll to the enchant panel
-  setTimeout(() => {
-    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 60);
+  // Smooth scroll to the enchant panel — give the DOM time to render first
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1026,46 +1029,84 @@ function descEnchants(enchants) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// OPTIMISER — tries every permutation of books (up to 8),
-// pyramid-combines them, then applies the merged book to item
-// ═══════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════
-// OPTIMISER
+// OPTIMISER — runs in a Web Worker so the UI never freezes.
 //
-// The correct approach (same as iamcal/enchant-order):
-// Treat all N books + the item as a pool of nodes.
-// At each step, pick ANY two nodes and merge them.
-// The item node must always be the LEFT (target) side.
-// Recurse until one node remains.
-// Try every possible sequence of pairs — this covers
-// sequential, pyramid, split, and every hybrid automatically.
-//
-// For N enchants we have N+1 nodes. At each step we pick
-// 2 from the remaining pool → (k choose 2) choices per step.
-// Total combinations grow fast but are manageable up to ~8.
+// The algorithm is the same brute-force pool approach as
+// iamcal/enchant-order, but with memoization: we canonicalize
+// each pool state as a sorted string key and skip any state
+// we've already evaluated. This cuts the actual work from
+// millions of calls down to thousands even for 8 enchants.
 // ═══════════════════════════════════════════════════════════
 
-function optimise(sel, mode) {
-  const books = Object.entries(sel).map(([n, l]) => ({
-    isItem: false,
-    pwp: 0,
-    enchants: { [n]: l },
-    steps: [],
-  }));
-  if (!books.length) return null;
+// The worker code is inlined as a Blob so no separate file is needed.
+const WORKER_SRC = `
+// ── Maths (duplicated inside worker, no DOM access) ──────
+function pwpCost(p) { return Math.pow(2, p) - 1; }
 
-  const itemNode = {
-    isItem: true,
-    pwp: 0,
-    enchants: {},
-    steps: [],
+function getBookMult(name, enchantData) {
+  const e = enchantData.find(x => x.name === name);
+  return e ? e.bookMult : 1;
+}
+
+function enchCost(name, lvl, enchantData) {
+  return getBookMult(name, enchantData) * lvl;
+}
+
+function mergeNodes(target, sacrifice, enchantData) {
+  let ec = 0;
+  const result = { ...target.enchants };
+  for (const [n, l] of Object.entries(sacrifice.enchants)) {
+    if ((target.enchants[n] ?? 0) < l) {
+      ec += enchCost(n, l, enchantData);
+      result[n] = l;
+    }
+  }
+  return {
+    levelCost:      ec + pwpCost(target.pwp) + pwpCost(sacrifice.pwp),
+    resultPwp:      Math.max(target.pwp, sacrifice.pwp) + 1,
+    resultEnchants: result,
   };
+}
 
-  const iname = getAllItems().find(i => i.id === selectedItem)?.name ?? 'item';
+function descEnchants(enchants) {
+  return Object.entries(enchants).map(([n, l]) => {
+    const r = ['I','II','III','IV','V'][l - 1] ?? String(l);
+    return n + ' ' + r;
+  }).join(' + ');
+}
+
+// Canonical key for a pool state — sorted so order doesn't matter
+function poolKey(pool) {
+  return pool.map(n => {
+    const ks = Object.entries(n.enchants).sort().map(([k,v])=>k+':'+v).join(',');
+    return (n.isItem ? 'ITEM' : 'book') + '{' + ks + '}p' + n.pwp;
+  }).sort().join('|');
+}
+
+function isBetter(a, b, mode) {
+  if (a.hasTooExpensive !== b.hasTooExpensive) return !a.hasTooExpensive;
+  if (mode === 'xp') return a.totalLevelCost < b.totalLevelCost;
+  if (a.finalPwp !== b.finalPwp) return a.finalPwp < b.finalPwp;
+  return a.totalLevelCost < b.totalLevelCost;
+}
+
+self.onmessage = function(e) {
+  const { sel, mode, iname, enchantData } = e.data;
+
+  const books = Object.entries(sel).map(([n, l]) => ({
+    isItem: false, pwp: 0, enchants: { [n]: l }, steps: [],
+  }));
+
+  const itemNode = { isItem: true, pwp: 0, enchants: {}, steps: [] };
 
   let best = null;
+  const visited = new Set();
 
   function solve(pool) {
+    const key = poolKey(pool);
+    if (visited.has(key)) return;
+    visited.add(key);
+
     if (pool.length === 1) {
       const node = pool[0];
       const totalCost = node.steps.reduce((s, st) => s + st.levelCost, 0);
@@ -1078,19 +1119,25 @@ function optimise(sel, mode) {
     for (let i = 0; i < pool.length; i++) {
       for (let j = 0; j < pool.length; j++) {
         if (i === j) continue;
-        const target = pool[i];
+        const target   = pool[i];
         const sacrifice = pool[j];
-
-        // The item can only be a target (left slot), never a sacrifice
         if (sacrifice.isItem) continue;
 
-        const { levelCost, resultPwp, resultEnchants } = mergeNodes(target, sacrifice);
+        const { levelCost, resultPwp, resultEnchants } = mergeNodes(target, sacrifice, enchantData);
 
         const stepDesc = target.isItem
-          ? `Apply <span class="hi-book">${descEnchants(sacrifice.enchants)} book</span> to <span class="hi-item">${iname}</span>`
-          : `Combine <span class="hi-book">${descEnchants(target.enchants)} book</span> + <span class="hi-book">${descEnchants(sacrifice.enchants)} book</span> → <strong>${descEnchants(resultEnchants)} book</strong>`;
+          ? 'Apply [book:' + descEnchants(sacrifice.enchants) + '] to [item:' + iname + ']'
+          : 'Combine [book:' + descEnchants(target.enchants) + '] + [book:' + descEnchants(sacrifice.enchants) + '] = [book:' + descEnchants(resultEnchants) + ']';
 
-        const newStep = { levelCost, resultPwp, resultEnchants, tooExpensive: levelCost > 39, description: stepDesc };
+        const newStep = {
+          levelCost, resultPwp, resultEnchants,
+          tooExpensive: levelCost > 39,
+          isItemStep: target.isItem,
+          targetDesc: target.isItem ? iname : descEnchants(target.enchants),
+          sacrificeDesc: descEnchants(sacrifice.enchants),
+          resultDesc: descEnchants(resultEnchants),
+          rawDesc: stepDesc,
+        };
 
         const merged = {
           isItem: target.isItem,
@@ -1101,42 +1148,86 @@ function optimise(sel, mode) {
 
         const newPool = pool.filter((_, idx) => idx !== i && idx !== j);
         newPool.push(merged);
-
         solve(newPool);
       }
     }
   }
 
   solve([itemNode, ...books]);
-  return best;
+  self.postMessage(best);
+};
+`;
+
+let activeWorker = null;
+let loadingInterval = null;
+
+const LOADING_MESSAGES = [
+  'Crunching the numbers…',
+  'Consulting the enchanting table…',
+  'Bribing the librarian villager…',
+  'Checking all possible anvil sequences…',
+  'Avoiding "Too Expensive"…',
+  'Running through the combinations…',
+  'Calculating prior work penalties…',
+  'Finding the cheapest path…',
+  'Optimising your XP spend…',
+  'Almost there, probably…',
+  'The anvil is thinking…',
+  'Sorting enchants by cost…',
+  'Mapping the merge tree…',
+  'Counting experience bottles…',
+  'Negotiating with the RNG…',
+];
+
+function pickLoadingMessage(exclude) {
+  const pool = LOADING_MESSAGES.filter(m => m !== exclude);
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function isBetter(a, b, mode) {
-  // Always prefer plans without too-expensive steps
-  if (a.hasTooExpensive !== b.hasTooExpensive) return !a.hasTooExpensive;
-  if (mode === 'xp')  return a.totalLevelCost < b.totalLevelCost;
-  if (a.finalPwp !== b.finalPwp) return a.finalPwp < b.finalPwp;
-  return a.totalLevelCost < b.totalLevelCost;
+function startLoadingMessages() {
+  const el = document.querySelector('#calc-loading span');
+  let current = pickLoadingMessage('');
+  el.textContent = current;
+  loadingInterval = setInterval(() => {
+    current = pickLoadingMessage(current);
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.textContent = current;
+      el.style.opacity = '1';
+    }, 300);
+  }, 5000);
 }
 
+function stopLoadingMessages() {
+  clearInterval(loadingInterval);
+  loadingInterval = null;
+  const el = document.querySelector('#calc-loading span');
+  if (el) { el.style.opacity = '1'; el.textContent = ''; }
+}
+
+function optimise(sel, mode) {
+  // Kept for compatibility — actual work done in worker
+  return null;
+}
 
 // ═══════════════════════════════════════════════════════════
 // CALCULATE & DISPLAY RESULTS
 // ═══════════════════════════════════════════════════════════
 function fireRestart(btn) {
-  // Animate the button
   btn.classList.remove('fired');
   void btn.offsetWidth;
   btn.classList.add('fired');
 
-  // Fade out results panel
-  const resultsPanel  = document.getElementById('results-panel');
-  const enchantPanel  = document.getElementById('enchant-panel');
+  // Kill any in-progress calculation
+  if (activeWorker) { activeWorker.terminate(); activeWorker = null; }
+  stopLoadingMessages();
+
+  const resultsPanel = document.getElementById('results-panel');
+  const enchantPanel = document.getElementById('enchant-panel');
   resultsPanel.classList.add('hiding');
 
   setTimeout(() => {
-    // Hide results + enchant panel
-    resultsPanel.style.display  = 'none';
+    resultsPanel.style.display = 'none';
     resultsPanel.classList.remove('hiding');
     enchantPanel.classList.add('hiding');
 
@@ -1144,17 +1235,12 @@ function fireRestart(btn) {
       enchantPanel.style.display = 'none';
       enchantPanel.classList.remove('hiding');
 
-      // Reset state
       selectedItem     = null;
       selectedEnchants = {};
       displayEnchants  = [];
       document.getElementById('enchant-tbody').innerHTML = '';
       updateCalcBtn();
-
-      // Deselect item card
       document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
-
-      // Smooth scroll back to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 180);
   }, 200);
@@ -1164,26 +1250,54 @@ function calculate() {
   const btn     = document.getElementById('calc-btn');
   const loading = document.getElementById('calc-loading');
 
-  // Flash animation on button
   btn.classList.remove('fired');
   void btn.offsetWidth;
   btn.classList.add('fired');
 
-  // Show spinner, hide button
-  btn.style.display     = 'none';
+  btn.style.display = 'none';
   loading.classList.add('visible');
+  startLoadingMessages();
 
-  // Defer the heavy computation so the browser can paint the spinner first
-  setTimeout(() => {
-    const result = optimise(selectedEnchants, optimMode);
+  // Kill any previous worker
+  if (activeWorker) { activeWorker.terminate(); activeWorker = null; }
 
-    // Hide spinner, restore button
+  // Build a deduplicated enchant data payload for the worker
+  const enchantData = ALL_ENCHANTS.map(e => ({ name: e.name, bookMult: e.bookMult }));
+  const iname = getAllItems().find(i => i.id === selectedItem)?.name ?? 'item';
+
+  const blob   = new Blob([WORKER_SRC], { type: 'application/javascript' });
+  const workerURL = URL.createObjectURL(blob);
+  activeWorker = new Worker(workerURL);
+  URL.revokeObjectURL(workerURL);
+
+  activeWorker.onmessage = (e) => {
+    activeWorker = null;
+    stopLoadingMessages();
     loading.classList.remove('visible');
     btn.style.display = '';
 
+    const result = e.data;
     if (!result) return;
+
+    // Re-render step descriptions as HTML (worker sent plain text markers)
+    result.steps = result.steps.map(s => ({
+      ...s,
+      description: s.isItemStep
+        ? `Apply <span class="hi-book">${s.sacrificeDesc} book</span> to <span class="hi-item">${s.targetDesc}</span>`
+        : `Combine <span class="hi-book">${s.targetDesc} book</span> + <span class="hi-book">${s.sacrificeDesc} book</span> → <strong>${s.resultDesc} book</strong>`,
+    }));
+
     showResults(result);
-  }, 30);
+  };
+
+  activeWorker.onerror = () => {
+    activeWorker = null;
+    stopLoadingMessages();
+    loading.classList.remove('visible');
+    btn.style.display = '';
+  };
+
+  activeWorker.postMessage({ sel: selectedEnchants, mode: optimMode, iname, enchantData });
 }
 
 function showResults(result) {
