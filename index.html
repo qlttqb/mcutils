@@ -498,7 +498,7 @@
   <div class="header-left">
     <div class="header-badge">⚒ Anvil Calculator</div>
     <h1>Enchantment<br>Order Calculator</h1>
-    <p class="subtitle">Plan the optimal anvil sequence and avoid the "Too Expensive!" warning.</p>
+    <p class="subtitle">Plan the optimal anvil sequence: Minimise XP and never see "Too Expensive!" again.</p>
   </div>
   <div class="header-right">
     <div class="search-wrap">
@@ -863,10 +863,12 @@ function selectItem(id) {
   renderEnchantTable();
   updateCalcBtn();
 
-  // Smooth scroll to the enchant panel — give the DOM time to render first
+  // Wait for the panel to be fully painted before scrolling
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(() => {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
     });
   });
 }
