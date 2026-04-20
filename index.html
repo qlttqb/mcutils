@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anvil Order Calculator</title>
+<title>Minecraft Enchantment Order Calculator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -45,36 +45,101 @@
 
   /* ── HEADER ─────────────────────────────── */
   header {
-    text-align: center;
-    padding: 52px 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 40px 0 32px;
     border-bottom: 1px solid var(--border);
     margin-bottom: 40px;
   }
+
+  .header-left { flex: 1; min-width: 0; }
 
   .header-badge {
     display: inline-flex; align-items: center; gap: 8px;
     background: rgba(110,231,183,.08);
     border: 1px solid rgba(110,231,183,.2);
-    border-radius: 100px; padding: 6px 18px;
-    font-size: 11px; font-weight: 700;
+    border-radius: 100px; padding: 5px 14px;
+    font-size: 10px; font-weight: 700;
     letter-spacing: .15em; text-transform: uppercase;
-    color: var(--accent); margin-bottom: 22px;
+    color: var(--accent); margin-bottom: 14px;
   }
 
   h1 {
     font-family: 'DM Sans', sans-serif;
-    font-size: clamp(28px, 5vw, 46px);
+    font-size: clamp(22px, 4vw, 36px);
     font-weight: 700;
     letter-spacing: -0.02em;
     background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
-    line-height: 1.1; margin-bottom: 14px;
+    line-height: 1.1; margin-bottom: 8px;
+    white-space: nowrap;
   }
 
   .subtitle {
-    color: var(--text2); font-size: 15px;
-    line-height: 1.65; max-width: 540px; margin: 0 auto;
+    color: var(--text3); font-size: 13px;
+    line-height: 1.55; max-width: 340px;
+  }
+
+  /* ── SEARCH BAR ──────────────────────────── */
+  .header-right { flex-shrink: 0; width: 280px; }
+
+  .search-wrap {
+    position: relative;
+  }
+
+  .search-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--text3); pointer-events: none;
+    display: flex; align-items: center;
+    transition: color .2s;
+  }
+
+  .search-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px 11px 40px;
+    font-size: 13px; font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    transition: border-color .2s, box-shadow .2s, background .2s;
+    outline: none;
+  }
+
+  .search-input::placeholder { color: var(--text3); }
+
+  .search-input:focus {
+    border-color: var(--accent);
+    background: var(--surface2);
+    box-shadow: 0 0 0 3px rgba(110,231,183,.1);
+  }
+
+  .search-input:focus + .search-focus-ring { opacity: 1; }
+  .search-wrap:focus-within .search-icon { color: var(--accent); }
+
+  .search-clear {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: var(--surface3); border: none; border-radius: 4px;
+    color: var(--text3); font-size: 11px; cursor: pointer;
+    padding: 2px 6px; display: none; align-items: center;
+    font-family: 'DM Sans', sans-serif; font-weight: 700;
+    transition: color .15s, background .15s;
+  }
+  .search-clear:hover { color: var(--text); background: var(--border2); }
+  .search-clear.visible { display: flex; }
+
+  /* highlight matched item cards */
+  .item-card.search-hidden {
+    opacity: 0; pointer-events: none;
+    transform: scale(0.92);
+    transition: opacity .2s, transform .2s;
+  }
+  .item-card:not(.search-hidden) {
+    transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease, opacity .2s;
   }
 
   /* ── SECTION LABELS ──────────────────────── */
@@ -381,6 +446,39 @@
   }
   .restart-btn.fired { animation: restartFlash .35s ease-out; }
 
+  /* ── LOADING SPINNER ─────────────────────── */
+  #calc-loading {
+    display: none;
+    align-items: center; justify-content: center;
+    gap: 12px; margin-top: 28px;
+    color: var(--text2); font-size: 13px; font-weight: 600;
+  }
+  #calc-loading.visible { display: flex; }
+
+  .spinner {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2.5px solid rgba(110,231,183,.2);
+    border-top-color: var(--accent);
+    animation: spin .7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── SMOOTH PANEL TRANSITIONS ────────────── */
+  #enchant-panel, #results-panel {
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  #enchant-panel.hiding, #results-panel.hiding {
+    opacity: 0; transform: translateY(12px); pointer-events: none;
+  }
+
+  /* ── RESPONSIVE HEADER ───────────────────── */
+  @media (max-width: 640px) {
+    header { flex-direction: column; align-items: flex-start; gap: 20px; }
+    .header-right { width: 100%; }
+    h1 { white-space: normal; font-size: clamp(22px, 7vw, 32px); }
+  }
+
   @media (max-width: 600px) {
     .mode-selector { flex-direction: column; }
     .items-grid { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
@@ -396,9 +494,20 @@
 
 <!-- HEADER -->
 <header>
-  <div class="header-badge">⚒ Anvil Calculator</div>
-  <h1>Enchantment<br>Order Calculator</h1>
-  <p class="subtitle">Plan the optimal anvil sequence for your enchantments to avoid spending too much xp or to avoid the "Too Expensive!" warning.</p>
+  <div class="header-left">
+    <div class="header-badge">⚒ Anvil Calculator</div>
+    <h1>Enchantment<br>Order Calculator</h1>
+    <p class="subtitle">Plan the optimal anvil sequence — minimise XP and never see "Too Expensive!" again.</p>
+  </div>
+  <div class="header-right">
+    <div class="search-wrap">
+      <span class="search-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </span>
+      <input class="search-input" id="item-search" type="text" placeholder="Search items…" oninput="filterItems(this.value)" autocomplete="off" spellcheck="false">
+      <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+    </div>
+  </div>
 </header>
 
 <!-- STEP 1: ITEM SELECTION -->
@@ -463,6 +572,10 @@
     <button class="calc-btn" id="calc-btn" disabled onclick="calculate()">
       Calculate Enchantment Order
     </button>
+    <div id="calc-loading">
+      <div class="spinner"></div>
+      <span>Finding optimal order…</span>
+    </div>
   </div>
 </div>
 
@@ -598,6 +711,7 @@ const INCOMPAT_GROUPS = [
   ['riptide', 'channeling'],
   ['density', 'breach'],
   ['multishot', 'piercing'],
+  ['depth_strider', 'frost_walker'],
 ];
 
 // name → canonical incompatibility key
@@ -609,6 +723,7 @@ const NAME_KEY = {
   'Luck of the Sea': 'luck_of_the_sea', 'Mending': 'mending', 'Infinity': 'infinity',
   'Riptide': 'riptide', 'Loyalty': 'loyalty', 'Channeling': 'channeling',
   'Density': 'density', 'Breach': 'breach', 'Multishot': 'multishot', 'Piercing': 'piercing',
+  'Depth Strider': 'depth_strider', 'Frost Walker': 'frost_walker',
 };
 
 const ALL_ENCHANTS = [
@@ -738,10 +853,19 @@ function selectItem(id) {
   document.getElementById('card-' + id)?.classList.add('selected');
   selectedEnchants = {};
   displayEnchants  = enchantsForItem(id);
-  document.getElementById('enchant-panel').style.display = 'block';
+
+  const panel = document.getElementById('enchant-panel');
+  panel.style.display = 'block';
+  panel.classList.remove('hiding');
   document.getElementById('results-panel').style.display = 'none';
+
   renderEnchantTable();
   updateCalcBtn();
+
+  // Smooth scroll to the enchant panel
+  setTimeout(() => {
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1000,25 +1124,75 @@ function isBetter(a, b, mode) {
 // CALCULATE & DISPLAY RESULTS
 // ═══════════════════════════════════════════════════════════
 function fireRestart(btn) {
+  // Animate the button
   btn.classList.remove('fired');
   void btn.offsetWidth;
   btn.classList.add('fired');
-  setTimeout(() => location.reload(), 320);
+
+  // Fade out results panel
+  const resultsPanel  = document.getElementById('results-panel');
+  const enchantPanel  = document.getElementById('enchant-panel');
+  resultsPanel.classList.add('hiding');
+
+  setTimeout(() => {
+    // Hide results + enchant panel
+    resultsPanel.style.display  = 'none';
+    resultsPanel.classList.remove('hiding');
+    enchantPanel.classList.add('hiding');
+
+    setTimeout(() => {
+      enchantPanel.style.display = 'none';
+      enchantPanel.classList.remove('hiding');
+
+      // Reset state
+      selectedItem     = null;
+      selectedEnchants = {};
+      displayEnchants  = [];
+      document.getElementById('enchant-tbody').innerHTML = '';
+      updateCalcBtn();
+
+      // Deselect item card
+      document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+
+      // Smooth scroll back to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 180);
+  }, 200);
 }
 
 function calculate() {
-  const btn = document.getElementById('calc-btn');
-  btn.classList.remove('fired');
-  void btn.offsetWidth; // reflow to restart animation
-  btn.classList.add('fired');
-  const result = optimise(selectedEnchants, optimMode);
-  if (!result) return;
+  const btn     = document.getElementById('calc-btn');
+  const loading = document.getElementById('calc-loading');
 
+  // Flash animation on button
+  btn.classList.remove('fired');
+  void btn.offsetWidth;
+  btn.classList.add('fired');
+
+  // Show spinner, hide button
+  btn.style.display     = 'none';
+  loading.classList.add('visible');
+
+  // Defer the heavy computation so the browser can paint the spinner first
+  setTimeout(() => {
+    const result = optimise(selectedEnchants, optimMode);
+
+    // Hide spinner, restore button
+    loading.classList.remove('visible');
+    btn.style.display = '';
+
+    if (!result) return;
+    showResults(result);
+  }, 30);
+}
+
+function showResults(result) {
   const panel  = document.getElementById('results-panel');
   const iname  = getAllItems().find(i => i.id === selectedItem)?.name ?? selectedItem;
   const modeStr = optimMode === 'xp' ? 'minimum total XP' : 'minimum prior work penalty';
 
   panel.style.display = 'block';
+  panel.classList.remove('hiding');
   document.getElementById('result-summary').textContent =
     `Optimal order for ${iname} · optimised for ${modeStr}`;
 
@@ -1057,6 +1231,31 @@ function calculate() {
   `;
 
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════════════════
+function filterItems(query) {
+  const q = query.trim().toLowerCase();
+  const clearBtn = document.getElementById('search-clear');
+  clearBtn.classList.toggle('visible', q.length > 0);
+
+  for (const items of Object.values(ITEM_GROUPS)) {
+    for (const item of items) {
+      const card = document.getElementById('card-' + item.id);
+      if (!card) continue;
+      const matches = !q || item.name.toLowerCase().includes(q);
+      card.classList.toggle('search-hidden', !matches);
+    }
+  }
+}
+
+function clearSearch() {
+  const input = document.getElementById('item-search');
+  input.value = '';
+  filterItems('');
+  input.focus();
 }
 
 // ═══════════════════════════════════════════════════════════
