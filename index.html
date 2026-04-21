@@ -498,7 +498,7 @@
   <div class="header-left">
     <div class="header-badge">⚒ Anvil Calculator</div>
     <h1>Enchantment<br>Order Calculator</h1>
-    <p class="subtitle">Plan the optimal anvil sequence: Minimise XP and never see "Too Expensive!" again.</p>
+    <p class="subtitle">Plan the optimal anvil sequence: minimise XP and never see "Too Expensive!" again.</p>
   </div>
   <div class="header-right">
     <div class="search-wrap">
@@ -704,6 +704,8 @@ function buildItemGrids() {
 const INCOMPAT_GROUPS = [
   ['protection', 'fire_protection', 'blast_protection', 'projectile_protection'],
   ['sharpness', 'smite', 'bane_of_arthropods'],
+  ['smite', 'density'],
+  ['smite', 'breach'],
   ['silk_touch', 'fortune'],
   ['silk_touch', 'looting'],
   ['silk_touch', 'luck_of_the_sea'],
@@ -863,12 +865,15 @@ function selectItem(id) {
   renderEnchantTable();
   updateCalcBtn();
 
-  // Wait for the panel to be fully painted before scrolling
+  // Use window.scrollTo with an explicit Y coordinate — more reliable than
+  // scrollIntoView on deployed/HTTPS environments where smooth behaviour
+  // can be silently ignored by the browser before layout settles.
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       setTimeout(() => {
-        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 50);
+        const top = panel.getBoundingClientRect().top + window.scrollY - 20;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }, 80);
     });
   });
 }
@@ -1172,11 +1177,14 @@ const LOADING_MESSAGES = [
   'Running through the combinations…',
   'Calculating prior work penalties…',
   'Finding the cheapest path…',
+  'Looking for therapy...',
   'Optimising your XP spend…',
   'Almost there, probably…',
+  'Thanking the players of OOW...',
   'The anvil is thinking…',
   'Sorting enchants by cost…',
   'Mapping the merge tree…',
+  'Thank you, Arya',
   'Counting experience bottles…',
   'Negotiating with the RNG…',
 ];
