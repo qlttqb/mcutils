@@ -473,7 +473,27 @@
     opacity: 0; transform: translateY(12px); pointer-events: none;
   }
 
-  /* ── RESPONSIVE HEADER ───────────────────── */
+  /* ── DONATE BUTTON ───────────────────────── */
+  #donate-corner {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.7;
+    transition: opacity .2s;
+  }
+  #donate-corner:hover { opacity: 1; }
+  #donate-corner-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
   @media (max-width: 640px) {
     header { flex-direction: column; align-items: flex-start; gap: 20px; }
     .header-right { width: 100%; }
@@ -596,6 +616,25 @@
 </div>
 
 </div><!-- /wrapper -->
+
+<!-- PAYPAL DONATE -->
+<div id="donate-corner">
+  <div id="donate-corner-label">Support the project</div>
+  <div id="donate-button"></div>
+</div>
+
+<script src="https://www.paypalobjects.com/donate/sdk/donate-sdk.js" charset="UTF-8"></script>
+<script>
+PayPal.Donation.Button({
+  env: 'production',
+  hosted_button_id: 'AN9Y7K5DKLL7Q',
+  image: {
+    src: 'https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif',
+    alt: 'Donate with PayPal button',
+    title: 'PayPal - The safer, easier way to pay online!',
+  }
+}).render('#donate-button');
+</script>
 
 <script>
 // ═══════════════════════════════════════════════════════════
