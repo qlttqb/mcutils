@@ -3,25 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minecraft Enchantment Order Calculator</title>
+<title>MCUtils</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<!-- Vercel Analytics — automatically activated after deploying to Vercel -->
-<script defer src="/_vercel/insights/script.js"></script>
-<!-- Vercel Speed Insights — automatically activated after deploying to Vercel -->
-<script>
-  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
-</script>
-<script defer src="/_vercel/speed-insights/script.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:#0d0f14; --surface:#141720; --surface2:#1c2030; --surface3:#252a3a;
-    --border:#2e3450; --border2:#3d4460;
-    --accent:#6ee7b7; --accent2:#34d399; --accent3:#059669;
-    --gold:#fbbf24; --red:#f87171; --blue:#60a5fa;
-    --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b;
-    --disabled:#2a2e40; --disabled-text:#4a5068; --card-hover:#1e2436;
-    --radius:12px; --radius-sm:8px;
+    --bg: #0d0f14;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --surface3: #252a3a;
+    --border: #2e3450;
+    --border2: #3d4460;
+    --accent: #6ee7b7;
+    --accent2: #34d399;
+    --accent3: #059669;
+    --gold: #fbbf24;
+    --blue: #60a5fa;
+    --purple: #a78bfa;
+    --red: #f87171;
+    --orange: #fb923c;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --radius: 14px;
+    --radius-sm: 9px;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,595 +39,338 @@
     overflow-x: hidden;
   }
 
+  /* Grid background */
   body::before {
     content: '';
     position: fixed; inset: 0;
     background-image:
-      linear-gradient(rgba(110,231,183,.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(110,231,183,.03) 1px, transparent 1px);
+      linear-gradient(rgba(110,231,183,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(110,231,183,.025) 1px, transparent 1px);
     background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* Glow blob */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -180px; left: 50%; transform: translateX(-50%);
+    width: 700px; height: 500px;
+    background: radial-gradient(ellipse at center, rgba(110,231,183,.06) 0%, transparent 70%);
     pointer-events: none; z-index: 0;
   }
 
   .wrapper {
     position: relative; z-index: 1;
-    max-width: 960px; margin: 0 auto;
-    padding: 0 20px 80px;
+    max-width: 900px; margin: 0 auto;
+    padding: 0 24px 100px;
   }
 
-  /* ── HEADER ─────────────────────────────── */
+  /* ── HEADER ─────────────────────────────────── */
   header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 32px;
-    padding: 40px 0 32px;
+    padding: 64px 0 56px;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 40px;
+    margin-bottom: 52px;
   }
 
-  .header-left { flex: 1; min-width: 0; }
-
-  .header-badge {
+  .site-badge {
     display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(110,231,183,.08);
-    border: 1px solid rgba(110,231,183,.2);
+    background: rgba(110,231,183,.07);
+    border: 1px solid rgba(110,231,183,.18);
     border-radius: 100px; padding: 5px 14px;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: .15em; text-transform: uppercase;
-    color: var(--accent); margin-bottom: 14px;
+    font-size: 10px; font-weight: 800;
+    letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 20px;
+  }
+
+  .site-badge span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .4; transform: scale(.7); }
   }
 
   h1 {
-    font-family: 'DM Sans', sans-serif;
-    font-size: clamp(22px, 4vw, 36px);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1.1; margin-bottom: 8px;
-    white-space: nowrap;
+    font-size: clamp(38px, 7vw, 62px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+    margin-bottom: 16px;
   }
 
-  .subtitle {
-    color: var(--text3); font-size: 13px;
-    line-height: 1.55; max-width: 340px;
+  h1 .mc    { color: var(--accent); }
+  h1 .tools { color: #ffffff; }
+
+  .tagline {
+    font-size: 16px;
+    color: var(--text3);
+    font-weight: 400;
+    line-height: 1.6;
+    max-width: 440px;
   }
 
-  /* ── SEARCH BAR ──────────────────────────── */
-  .header-right { flex-shrink: 0; width: 280px; }
-
-  .search-wrap {
-    position: relative;
-  }
-
-  .search-icon {
-    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-    color: var(--text3); pointer-events: none;
-    display: flex; align-items: center;
-    transition: color .2s;
-  }
-
-  .search-input {
-    width: 100%;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 11px 14px 11px 40px;
-    font-size: 13px; font-weight: 500;
-    font-family: 'DM Sans', sans-serif;
-    color: var(--text);
-    transition: border-color .2s, box-shadow .2s, background .2s;
-    outline: none;
-  }
-
-  .search-input::placeholder { color: var(--text3); }
-
-  .search-input:focus {
-    border-color: var(--accent);
-    background: var(--surface2);
-    box-shadow: 0 0 0 3px rgba(110,231,183,.1);
-  }
-
-  .search-input:focus + .search-focus-ring { opacity: 1; }
-  .search-wrap:focus-within .search-icon { color: var(--accent); }
-
-  .search-clear {
-    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-    background: var(--surface3); border: none; border-radius: 4px;
-    color: var(--text3); font-size: 11px; cursor: pointer;
-    padding: 2px 6px; display: none; align-items: center;
-    font-family: 'DM Sans', sans-serif; font-weight: 700;
-    transition: color .15s, background .15s;
-  }
-  .search-clear:hover { color: var(--text); background: var(--border2); }
-  .search-clear.visible { display: flex; }
-
-  /* highlight matched item cards */
-  .item-card.search-hidden {
-    opacity: 0; pointer-events: none;
-    transform: scale(0.92);
-    transition: opacity .2s, transform .2s;
-  }
-  .item-card:not(.search-hidden) {
-    transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease, opacity .2s;
-  }
-
-  /* ── SECTION LABELS ──────────────────────── */
-  .section-label {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
-  }
-  .section-label h2 {
-    font-family: 'DM Sans', sans-serif; font-size: 15px;
-    font-weight: 600; color: var(--text); letter-spacing: -0.01em;
-  }
-  .step-num {
-    width: 28px; height: 28px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent3), var(--accent));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 800; color: #0d1a12; flex-shrink: 0;
-  }
-  .section-divider {
-    height: 1px;
-    background: linear-gradient(90deg, var(--border), transparent);
-    margin: 36px 0 32px;
-  }
-
-  /* ── ITEM GROUPS ─────────────────────────── */
-  .item-group-label {
-    font-size: 10px; font-weight: 800; letter-spacing: .14em;
-    text-transform: uppercase; color: var(--text3);
-    margin-bottom: 12px; padding-left: 2px;
-  }
-  .items-group { margin-bottom: 26px; }
-  .items-grid {
+  /* ── TOOL CARDS ─────────────────────────────── */
+  .cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
   }
 
-  .item-card {
+  @media (max-width: 700px) {
+    .cards-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 440px) {
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+
+  .tool-card {
     background: var(--surface);
     border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 14px 8px 10px;
-    cursor: pointer;
-    transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease;
-    text-align: center;
-    position: relative; overflow: hidden;
-    user-select: none;
-  }
-  .item-card::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(110,231,183,.06), transparent);
-    opacity: 0; transition: opacity .18s;
-  }
-  .item-card:hover::before { opacity: 1; }
-  .item-card:hover {
-    border-color: var(--border2); background: var(--card-hover);
-    transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.4);
-  }
-  .item-card:active {
-    transform: scale(0.93) translateY(0px);
-    box-shadow: 0 2px 8px rgba(0,0,0,.5);
-    transition-duration: .08s;
-  }
-  .item-card.selected {
-    border-color: var(--accent); background: rgba(110,231,183,.07);
-    box-shadow: 0 0 0 1px var(--accent), 0 6px 20px rgba(110,231,183,.12);
-  }
-  .item-card.selected::before { opacity: 1; }
-
-  /* icon inside each card */
-  .item-icon-wrap {
-    width: 40px; height: 40px;
-    margin: 0 auto 8px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .item-icon-wrap .emoji { font-size: 28px; line-height: 1; }
-  .item-icon-wrap img {
-    width: 40px; height: 40px;
-    object-fit: contain;
-    image-rendering: pixelated; /* crisp pixel art */
-    border-radius: 3px;
-  }
-
-  .item-name {
-    font-size: 11px; font-weight: 600;
-    color: var(--text2); line-height: 1.3;
-  }
-  .item-card.selected .item-name { color: var(--accent); }
-
-  /* ── MODE SELECTOR ───────────────────────── */
-  .mode-selector { display: flex; gap: 10px; margin-bottom: 32px; }
-  .mode-btn {
-    flex: 1; background: var(--surface);
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm); padding: 14px 16px;
-    cursor: pointer; transition: border-color .18s, background .18s, transform .12s, box-shadow .12s; text-align: left;
-    user-select: none;
-  }
-  .mode-btn:hover { border-color: var(--border2); background: var(--card-hover); }
-  .mode-btn:active { transform: scale(0.97); box-shadow: none; transition-duration: .07s; }
-  .mode-btn.active { border-color: var(--gold); background: rgba(251,191,36,.06); }
-  .mode-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
-  .mode-btn.active .mode-title { color: var(--gold); }
-  .mode-desc { font-size: 11px; color: var(--text3); line-height: 1.4; }
-
-  /* ── ENCHANT TABLE ───────────────────────── */
-  #enchant-panel { display: none; }
-
-  .enchant-table {
-    width: 100%;
-    border-collapse: separate; border-spacing: 0;
-    border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden;
-  }
-  .enchant-table thead th {
-    background: var(--surface2);
-    font-size: 10px; font-weight: 800;
-    letter-spacing: .12em; text-transform: uppercase;
-    color: var(--text3); padding: 12px 16px; text-align: left;
-    border-bottom: 1px solid var(--border);
-  }
-  .enchant-table thead th:last-child { text-align: center; }
-
-  .enchant-row {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    transition: background .2s, opacity .3s ease;
-  }
-  .enchant-row:last-child { border-bottom: none; }
-  .enchant-row:hover:not(.disabled-row) { background: var(--surface2); }
-  .enchant-row.disabled-row { opacity: .28; pointer-events: none; }
-  .enchant-row.selected-row { background: rgba(110,231,183,.04); }
-  .enchant-row td { padding: 11px 16px; vertical-align: middle; }
-
-  .enchant-name {
-    font-size: 13px; font-weight: 600; color: var(--text);
-    display: flex; align-items: center; gap: 8px;
-  }
-  .badge-treasure {
-    font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
-    background: rgba(251,191,36,.15); border: 1px solid rgba(251,191,36,.3);
-    color: var(--gold); padding: 2px 7px; border-radius: 100px;
-  }
-  .badge-curse {
-    font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
-    background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.25);
-    color: var(--red); padding: 2px 7px; border-radius: 100px;
-  }
-  .enchant-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
-
-  .level-selector { display: flex; align-items: center; justify-content: center; gap: 4px; }
-  .lvl-btn {
-    width: 32px; height: 32px; border-radius: 6px;
-    border: 1.5px solid var(--border); background: var(--surface2);
-    color: var(--text3); font-size: 12px; font-weight: 700;
-    cursor: pointer; transition: border-color .14s, background .14s, color .14s, transform .1s, box-shadow .14s;
-    font-family: 'DM Sans', sans-serif;
-    user-select: none;
-  }
-  .lvl-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(110,231,183,.07); }
-  .lvl-btn:active { transform: scale(0.85); transition-duration: .07s; }
-  .lvl-btn.active {
-    border-color: var(--accent); background: var(--accent);
-    color: #0d1a12; box-shadow: 0 0 12px rgba(110,231,183,.35);
-    animation: lvlPop .2s ease;
-  }
-  @keyframes lvlPop {
-    0%   { transform: scale(0.82); }
-    60%  { transform: scale(1.12); }
-    100% { transform: scale(1); }
-  }
-
-
-
-  /* ── CALCULATE BUTTON ────────────────────── */
-  .calc-wrap { margin-top: 28px; text-align: center; }
-  .calc-btn {
-    background: linear-gradient(135deg, var(--accent3), var(--accent));
-    color: #0d1a12; border: none; border-radius: var(--radius-sm);
-    padding: 16px 52px; font-size: 15px; font-weight: 800;
-    font-family: 'DM Sans', sans-serif; cursor: pointer;
-    transition: transform .15s ease, box-shadow .15s ease, background .2s;
-    letter-spacing: .04em;
-    box-shadow: 0 4px 20px rgba(110,231,183,.2);
-    position: relative; overflow: hidden;
-    user-select: none;
-  }
-  .calc-btn::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: rgba(255,255,255,0);
-    transition: background .15s;
-  }
-  .calc-btn:hover:not(:disabled) {
-    transform: translateY(-2px); box-shadow: 0 8px 30px rgba(110,231,183,.35);
-  }
-  .calc-btn:active:not(:disabled) {
-    transform: scale(0.96) translateY(1px);
-    box-shadow: 0 2px 10px rgba(110,231,183,.2);
-    transition-duration: .07s;
-  }
-  .calc-btn:active:not(:disabled)::after { background: rgba(255,255,255,.12); }
-  .calc-btn:disabled {
-    background: var(--disabled); color: var(--disabled-text);
-    cursor: not-allowed; box-shadow: none; transform: none;
-  }
-  /* Flash animation when calc fires */
-  @keyframes calcFlash {
-    0%   { box-shadow: 0 0 0 0 rgba(110,231,183,.6); }
-    100% { box-shadow: 0 0 0 18px rgba(110,231,183,0); }
-  }
-  .calc-btn.fired { animation: calcFlash .4s ease-out; }
-
-  /* ── RESULTS ─────────────────────────────── */
-  #results-panel { display: none; margin-top: 40px; animation: fadeUp .4s ease; }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .result-header {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 20px 24px;
-    margin-bottom: 20px; display: flex; align-items: center; gap: 16px;
-  }
-  .result-header .rh-icon { font-size: 32px; }
-  .result-header h3 {
-    font-family: 'DM Sans', sans-serif; font-size: 17px;
-    font-weight: 600; color: var(--text); margin-bottom: 4px; letter-spacing: -0.01em;
-  }
-  .result-header p { font-size: 13px; color: var(--text2); }
-
-  .steps-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-  .step-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 16px 20px;
-    display: grid; grid-template-columns: auto 1fr auto;
-    gap: 16px; align-items: center;
-    animation: stepIn .3s ease both;
-  }
-  @keyframes stepIn {
-    from { opacity: 0; transform: translateX(-12px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-  .snum {
-    width: 32px; height: 32px; border-radius: 50%;
-    background: var(--surface3); border: 1.5px solid var(--border2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 800; color: var(--text2); flex-shrink: 0;
-  }
-  .sdesc { font-size: 13px; color: var(--text); line-height: 1.6; }
-  .sdesc strong { color: var(--accent); font-weight: 700; }
-  .sdesc .hi-item { color: var(--gold); font-weight: 700; }
-  .sdesc .hi-book { color: var(--blue); font-weight: 700; }
-  .scost { text-align: right; flex-shrink: 0; }
-  .scost-lvl { font-size: 18px; font-weight: 800; color: var(--accent); line-height: 1; }
-  .scost-xp { font-size: 11px; color: var(--text3); margin-top: 2px; }
-  .scost-warn { font-size: 10px; color: var(--red); margin-top: 2px; font-weight: 700; }
-
-  .totals-card {
-    background: linear-gradient(135deg, rgba(110,231,183,.06), rgba(52,211,153,.03));
-    border: 1px solid rgba(110,231,183,.25);
-    border-radius: var(--radius); padding: 24px 28px;
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 20px; flex-wrap: wrap; margin-bottom: 24px;
-  }
-  .total-stat { text-align: center; }
-  .total-val {
-    font-family: 'DM Sans', sans-serif; font-size: 30px;
-    font-weight: 700; color: var(--accent); line-height: 1; margin-bottom: 4px; letter-spacing: -0.02em;
-  }
-  .total-lbl {
-    font-size: 11px; font-weight: 700;
-    letter-spacing: .1em; text-transform: uppercase; color: var(--text3);
-  }
-  .total-div { width: 1px; height: 48px; background: var(--border); }
-
-  .restart-btn {
-    background: transparent; border: 1.5px solid var(--border2);
-    color: var(--text2); border-radius: var(--radius-sm);
-    padding: 13px 32px; font-size: 14px; font-weight: 700;
-    font-family: 'DM Sans', sans-serif; cursor: pointer;
-    transition: border-color .2s, color .2s, background .2s, transform .1s, box-shadow .1s;
-    display: flex; align-items: center; gap: 8px; margin: 0 auto;
-    user-select: none; position: relative; overflow: hidden;
-  }
-  .restart-btn::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: rgba(248,113,113,0);
-    transition: background .15s;
-  }
-  .restart-btn:hover {
-    border-color: var(--red); color: var(--red); background: rgba(248,113,113,.05);
-  }
-  .restart-btn:active {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 3px rgba(248,113,113,.2);
-    transition-duration: .07s;
-  }
-  .restart-btn:active::after { background: rgba(248,113,113,.08); }
-  @keyframes restartFlash {
-    0%   { box-shadow: 0 0 0 0 rgba(248,113,113,.5); }
-    100% { box-shadow: 0 0 0 14px rgba(248,113,113,0); }
-  }
-  .restart-btn.fired { animation: restartFlash .35s ease-out; }
-
-  /* ── LOADING SPINNER ─────────────────────── */
-  #calc-loading {
-    display: none;
-    align-items: center; justify-content: center;
-    gap: 12px; margin-top: 28px;
-    color: var(--text2); font-size: 13px; font-weight: 600;
-  }
-  #calc-loading.visible { display: flex; }
-  #calc-loading span { transition: opacity .3s ease; }
-
-  .spinner {
-    width: 20px; height: 20px; border-radius: 50%;
-    border: 2.5px solid rgba(110,231,183,.2);
-    border-top-color: var(--accent);
-    animation: spin .7s linear infinite;
-    flex-shrink: 0;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── SMOOTH PANEL TRANSITIONS ────────────── */
-  #enchant-panel, #results-panel {
-    transition: opacity .3s ease, transform .3s ease;
-  }
-  #enchant-panel.hiding, #results-panel.hiding {
-    opacity: 0; transform: translateY(12px); pointer-events: none;
-  }
-
-  /* ── DONATE BUTTON ───────────────────────── */
-  #donate-corner {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 999;
+    border-radius: var(--radius);
+    padding: 28px 26px;
+    text-decoration: none;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    opacity: 0.7;
+    gap: 0;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s, background .2s, transform .2s, box-shadow .2s;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* Coloured top stripe */
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-color, var(--accent));
+    opacity: 0;
     transition: opacity .2s;
+  }
+
+  /* Glow on hover */
+  .tool-card::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at top left, var(--card-glow, rgba(110,231,183,.06)), transparent 65%);
+    opacity: 0;
+    transition: opacity .25s;
+  }
+
+  .tool-card:hover {
+    border-color: var(--card-color, var(--accent));
+    background: var(--surface2);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 36px rgba(0,0,0,.4), 0 0 0 1px var(--card-color, var(--accent));
+  }
+
+  .tool-card:hover::before { opacity: 1; }
+  .tool-card:hover::after  { opacity: 1; }
+
+  .tool-card:active {
+    transform: scale(0.97) translateY(0);
+    transition-duration: .08s;
+  }
+
+  /* Coming soon variant */
+  .tool-card.coming-soon {
+    opacity: .45;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .tool-card.coming-soon:hover { transform: none; box-shadow: none; }
+
+  /* Card content */
+  .card-icon {
+    font-size: 34px;
+    line-height: 1;
+    margin-bottom: 18px;
+    position: relative; z-index: 1;
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .card-icon img {
+    width: 40px; height: 40px;
+    object-fit: contain;
+    image-rendering: pixelated;
+  }
+
+  .card-tag {
+    font-size: 9px; font-weight: 800;
+    letter-spacing: .12em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 100px;
+    background: rgba(110,231,183,.1);
+    border: 1px solid rgba(110,231,183,.2);
+    color: var(--accent);
+    width: fit-content;
+    margin-bottom: 10px;
+    position: relative; z-index: 1;
+  }
+
+  .card-tag.soon {
+    background: rgba(100,116,139,.1);
+    border-color: rgba(100,116,139,.2);
+    color: var(--text3);
+  }
+
+  .card-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -.01em;
+    margin-bottom: 8px;
+    position: relative; z-index: 1;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--text3);
+    line-height: 1.6;
+    flex: 1;
+    position: relative; z-index: 1;
+  }
+
+  .card-arrow {
+    margin-top: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--card-color, var(--accent));
+    display: flex; align-items: center; gap: 5px;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity .2s, transform .2s;
+    position: relative; z-index: 1;
+  }
+
+  .tool-card:hover .card-arrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* ── FOOTER ─────────────────────────────────── */
+  footer {
+    margin-top: 72px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .footer-text {
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  /* ── DONATE ─────────────────────────────────── */
+  #donate-corner {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    z-index: 999;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    opacity: .65; transition: opacity .2s;
   }
   #donate-corner:hover { opacity: 1; }
   #donate-corner-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
     color: var(--text3);
   }
-  @media (max-width: 640px) {
-    header { flex-direction: column; align-items: flex-start; gap: 20px; }
-    .header-right { width: 100%; }
-    h1 { white-space: normal; font-size: clamp(22px, 7vw, 32px); }
-  }
 
-  @media (max-width: 600px) {
-    .mode-selector { flex-direction: column; }
-    .items-grid { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
-    .step-card { grid-template-columns: auto 1fr; }
-    .scost { grid-column: 1 / -1; text-align: left; padding-left: 48px; }
-    .totals-card { justify-content: center; }
-    .total-div { display: none; }
+  /* ── RESPONSIVE ─────────────────────────────── */
+  @media (max-width: 560px) {
+    header { padding: 44px 0 40px; }
+    .cards-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
 <div class="wrapper">
 
-<!-- HEADER -->
-<header>
-  <div class="header-left">
-    <div class="header-badge">⚒ Anvil Calculator</div>
-    <h1>Enchantment<br>Order Calculator</h1>
-    <p class="subtitle">Plan the optimal anvil sequence: minimise XP and never see "Too Expensive!" again.</p>
-  </div>
-  <div class="header-right">
-    <div class="search-wrap">
-      <span class="search-icon">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </span>
-      <input class="search-input" id="item-search" type="text" placeholder="Search items…" oninput="filterItems(this.value)" autocomplete="off" spellcheck="false">
-      <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+  <header>
+    <div class="site-badge"><span></span> minecraft utilities</div>
+    <h1><span class="mc">MC</span><span class="tools">Utils</span></h1>
+    <p class="tagline">A growing collection of utilities for Minecraft players. No nonsense, just tools that work.</p>
+  </header>
+
+  <div class="cards-grid">
+
+    <!-- Enchantment Calculator -->
+    <a class="tool-card" href="enchants.html"
+       style="--card-color:#6ee7b7; --card-glow:rgba(110,231,183,.07)">
+      <div class="card-icon">
+        <img id="enchants-icon" src="icons/enchants.png" alt=""
+             onerror="this.style.display='none';document.getElementById('enchants-emoji').style.display='block'">
+        <span id="enchants-emoji" style="display:none">⚒️</span>
+      </div>
+      <div class="card-tag">Enchanting</div>
+      <div class="card-title">Enchantment Order Calculator</div>
+      <div class="card-desc">Find the optimal anvil sequence for any combination of enchantments. Minimise XP and avoid "Too Expensive!" forever.</div>
+      <div class="card-arrow">
+        Open tool
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </a>
+
+    <!-- Placeholder 2 -->
+    <div class="tool-card coming-soon"
+         style="--card-color:#60a5fa; --card-glow:rgba(96,165,250,.07)">
+      <div class="card-icon">🔧</div>
+      <div class="card-tag soon">Coming soon</div>
+      <div class="card-title">More tools on the way</div>
     </div>
-  </div>
-</header>
 
-<!-- STEP 1: ITEM SELECTION -->
-<div id="phase-item">
-  <div class="section-label">
-    <div class="step-num">1</div>
-    <h2>Choose an Item to Enchant</h2>
-  </div>
-  <div class="items-group">
-    <div class="item-group-label">⚔ Armour</div>
-    <div class="items-grid" id="grid-armour"></div>
-  </div>
-  <div class="items-group">
-    <div class="item-group-label">🗡 Weapons</div>
-    <div class="items-grid" id="grid-weapons"></div>
-  </div>
-  <div class="items-group">
-    <div class="item-group-label">⛏ Tools</div>
-    <div class="items-grid" id="grid-tools"></div>
-  </div>
-  <div class="items-group">
-    <div class="item-group-label">🎣 Miscellaneous</div>
-    <div class="items-grid" id="grid-misc"></div>
-  </div>
-</div>
-
-<!-- STEP 2 + 3: ENCHANTMENTS -->
-<div id="enchant-panel">
-  <div class="section-divider"></div>
-
-  <div class="section-label">
-    <div class="step-num">2</div>
-    <h2>Optimisation Mode</h2>
-  </div>
-  <div class="mode-selector">
-    <button class="mode-btn active" id="mode-xp" onclick="setMode('xp')">
-      <div class="mode-title">💡 Least Total XP</div>
-      <div class="mode-desc">Minimise overall experience spent across all anvil operations.</div>
-    </button>
-    <button class="mode-btn" id="mode-pwp" onclick="setMode('pwp')">
-      <div class="mode-title">🛡 Least Prior Work Penalty</div>
-      <div class="mode-desc">Keep the prior work penalty as low as possible on the finished item.</div>
-    </button>
-  </div>
-
-  <div class="section-label">
-    <div class="step-num">3</div>
-    <h2>Select Enchantments</h2>
-  </div>
-
-  <table class="enchant-table">
-    <thead>
-      <tr>
-        <th>Enchantment</th>
-        <th style="text-align:center">Level</th>
-      </tr>
-    </thead>
-    <tbody id="enchant-tbody"></tbody>
-  </table>
-
-  <div class="calc-wrap">
-    <button class="calc-btn" id="calc-btn" disabled onclick="calculate()">
-      Calculate Enchantment Order
-    </button>
-    <div id="calc-loading">
-      <div class="spinner"></div>
-      <span>Finding optimal order…</span>
+    <!-- Placeholder 3 -->
+    <div class="tool-card coming-soon"
+         style="--card-color:#a78bfa; --card-glow:rgba(167,139,250,.07)">
+      <div class="card-icon">🔧</div>
+      <div class="card-tag soon">Coming soon</div>
+      <div class="card-title">More tools on the way</div>
     </div>
-  </div>
-</div>
 
-<!-- STEP 4: RESULTS -->
-<div id="results-panel">
-  <div class="section-divider"></div>
-  <div class="result-header">
-    <div class="rh-icon">📜</div>
-    <div>
-      <h3>Optimal Anvil Sequence</h3>
-      <p id="result-summary"></p>
+    <!-- Placeholder 4 -->
+    <div class="tool-card coming-soon"
+         style="--card-color:#fb923c; --card-glow:rgba(251,146,60,.07)">
+      <div class="card-icon">🔧</div>
+      <div class="card-tag soon">Coming soon</div>
+      <div class="card-title">More tools on the way</div>
     </div>
-  </div>
-  <div class="steps-list" id="steps-list"></div>
-  <div class="totals-card" id="totals-card"></div>
-  <button class="restart-btn" onclick="fireRestart(this)">↩ Start Over</button>
-</div>
 
-</div><!-- /wrapper -->
+    <!-- Placeholder 5 -->
+    <div class="tool-card coming-soon"
+         style="--card-color:#f87171; --card-glow:rgba(248,113,113,.07)">
+      <div class="card-icon">🔧</div>
+      <div class="card-tag soon">Coming soon</div>
+      <div class="card-title">More tools on the way</div>
+    </div>
+
+    <!-- Placeholder 6 -->
+    <div class="tool-card coming-soon"
+         style="--card-color:#fbbf24; --card-glow:rgba(251,191,36,.07)">
+      <div class="card-icon">🔧</div>
+      <div class="card-tag soon">Coming soon</div>
+      <div class="card-title">More tools on the way</div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span class="footer-text">MCUtils — built for the community</span>
+    <span class="footer-text">More tools coming soon</span>
+  </footer>
+
+</div>
 
 <!-- PAYPAL DONATE -->
 <div id="donate-corner">
@@ -643,796 +391,5 @@ PayPal.Donation.Button({
 }).render('#donate-button');
 </script>
 
-<script>
-// ═══════════════════════════════════════════════════════════
-// ITEM DEFINITIONS
-// ═══════════════════════════════════════════════════════════
-const ITEM_GROUPS = {
-  armour: [
-    { id: 'helmet',       name: 'Helmet',                   emoji: '⛑️' },
-    { id: 'chestplate',   name: 'Chestplate',               emoji: '🧥' },
-    { id: 'leggings',     name: 'Leggings',                 emoji: '👖' },
-    { id: 'boots',        name: 'Boots',                    emoji: '👟' },
-    { id: 'turtle_shell', name: 'Turtle Shell',             emoji: '🐢' },
-    { id: 'elytra',       name: 'Elytra',                   emoji: '🦋' },
-  ],
-  weapons: [
-    { id: 'sword',    name: 'Sword',    emoji: '⚔️' },
-    { id: 'axe',      name: 'Axe',      emoji: '🪓' },
-    { id: 'bow',      name: 'Bow',      emoji: '🏹' },
-    { id: 'crossbow', name: 'Crossbow', emoji: '🎯' },
-    { id: 'trident',  name: 'Trident',  emoji: '🔱' },
-    { id: 'mace',     name: 'Mace',     emoji: '🏏' },
-    { id: 'spear',    name: 'Spear',    emoji: '🗡️' },
-  ],
-  tools: [
-    { id: 'pickaxe',     name: 'Pickaxe',       emoji: '⛏️' },
-    { id: 'shovel',      name: 'Shovel',         emoji: '🥄' },
-    { id: 'hoe',         name: 'Hoe',            emoji: '🌾' },
-    { id: 'fishing_rod', name: 'Fishing Rod',    emoji: '🎣' },
-    { id: 'shears',      name: 'Shears',         emoji: '✂️' },
-    { id: 'brush',       name: 'Brush',          emoji: '🖌️' },
-    { id: 'flint_steel', name: 'Flint & Steel',  emoji: '🔥' },
-    { id: 'shield',      name: 'Shield',         emoji: '🛡️' },
-  ],
-  misc: [
-    { id: 'carrot_stick', name: 'Carrot on a Stick',        emoji: '🥕' },
-    { id: 'warped_stick', name: 'Warped Fungus on a Stick', emoji: '🍄' },
-    { id: 'pumpkin',      name: 'Pumpkin',                  emoji: '🎃' },
-  ],
-};
-
-// ═══════════════════════════════════════════════════════════
-// ICON LOADING
-// Works on file://, no server needed.
-// We render <img> tags directly with the icon path. The browser
-// attempts each extension in sequence via onerror chaining.
-// If none load, we swap in the emoji span as a fallback.
-// ═══════════════════════════════════════════════════════════
-const ICON_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
-
-function getAllItems() {
-  return Object.values(ITEM_GROUPS).flat();
-}
-
-function loadIcons() { /* no-op: browser handles img loading directly */ }
-
-// Build icon HTML for one item card.
-// Tries icons/<id>.png, then .jpg, .jpeg, etc.
-// Falls back to emoji if every extension fails.
-function iconHTML(item) {
-  const srcs = ICON_EXTS.map(ext => `icons/${item.id}.${ext}`);
-  const emoji = item.emoji;
-  // Store the src list as JSON on a data attribute so onerror can walk it
-  const safeEmoji = emoji.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-  const safeSrcs  = JSON.stringify(srcs).replace(/'/g,"\\'");
-  return `<img
-    src="${srcs[0]}"
-    alt="${item.name}"
-    data-srcs='${safeSrcs}'
-    data-idx="0"
-    onerror="(function(el){
-      var idx = parseInt(el.dataset.idx||0)+1;
-      var srcs = JSON.parse(el.dataset.srcs);
-      if(idx < srcs.length){
-        el.dataset.idx=idx;
-        el.src=srcs[idx];
-      } else {
-        var sp=document.createElement('span');
-        sp.textContent='${safeEmoji}';
-        sp.style.fontSize='28px';
-        el.replaceWith(sp);
-      }
-    })(this)">`;
-}
-
-// ═══════════════════════════════════════════════════════════
-// BUILD ITEM GRIDS
-// ═══════════════════════════════════════════════════════════
-function buildItemGrids() {
-  for (const [grp, items] of Object.entries(ITEM_GROUPS)) {
-    const el = document.getElementById('grid-' + grp);
-    if (!el) continue;
-    el.innerHTML = items.map(it => `
-      <div class="item-card" id="card-${it.id}" onclick="selectItem('${it.id}')">
-        <div class="item-icon-wrap">${iconHTML(it)}</div>
-        <div class="item-name">${it.name}</div>
-      </div>
-    `).join('');
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// ENCHANTMENT DATA
-// bookMult = book-sacrifice multiplier used when applying an
-//            enchanted book to an item in the anvil (Java Ed.)
-// ═══════════════════════════════════════════════════════════
-const INCOMPAT_GROUPS = [
-  ['protection', 'fire_protection', 'blast_protection', 'projectile_protection'],
-  ['sharpness', 'smite', 'bane_of_arthropods'],
-  ['smite', 'density'],
-  ['smite', 'breach'],
-  ['silk_touch', 'fortune'],
-  ['silk_touch', 'looting'],
-  ['silk_touch', 'luck_of_the_sea'],
-  ['mending', 'infinity'],
-  ['riptide', 'loyalty'],
-  ['riptide', 'channeling'],
-  ['density', 'breach'],
-  ['multishot', 'piercing'],
-  ['depth_strider', 'frost_walker'],
-];
-
-// name → canonical incompatibility key
-const NAME_KEY = {
-  'Protection': 'protection', 'Fire Protection': 'fire_protection',
-  'Blast Protection': 'blast_protection', 'Projectile Protection': 'projectile_protection',
-  'Sharpness': 'sharpness', 'Smite': 'smite', 'Bane of Arthropods': 'bane_of_arthropods',
-  'Silk Touch': 'silk_touch', 'Fortune': 'fortune', 'Looting': 'looting',
-  'Luck of the Sea': 'luck_of_the_sea', 'Mending': 'mending', 'Infinity': 'infinity',
-  'Riptide': 'riptide', 'Loyalty': 'loyalty', 'Channeling': 'channeling',
-  'Density': 'density', 'Breach': 'breach', 'Multishot': 'multishot', 'Piercing': 'piercing',
-  'Depth Strider': 'depth_strider', 'Frost Walker': 'frost_walker',
-};
-
-const ALL_ENCHANTS = [
-  // ── Armour (shared)
-  { id:'protection',            name:'Protection',            maxLvl:4, bookMult:1, treasure:false, curse:false, desc:'Reduces most damage',                         items:['helmet','chestplate','leggings','boots','turtle_shell'] },
-  { id:'fire_protection',       name:'Fire Protection',       maxLvl:4, bookMult:1, treasure:false, curse:false, desc:'Reduces fire damage & burn time',             items:['helmet','chestplate','leggings','boots','turtle_shell'] },
-  { id:'blast_protection',      name:'Blast Protection',      maxLvl:4, bookMult:1, treasure:false, curse:false, desc:'Reduces explosion damage & knockback',         items:['helmet','chestplate','leggings','boots','turtle_shell'] },
-  { id:'projectile_protection', name:'Projectile Protection', maxLvl:4, bookMult:1, treasure:false, curse:false, desc:'Reduces projectile damage',                   items:['helmet','chestplate','leggings','boots','turtle_shell'] },
-  { id:'thorns',                name:'Thorns',                maxLvl:3, bookMult:4, treasure:false, curse:false, desc:'Damages attackers on hit',                    items:['helmet','chestplate','leggings','boots','turtle_shell'] },
-  { id:'armor_unbreaking',      name:'Unbreaking',            maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Increases item durability',                   items:['helmet','chestplate','leggings','boots','turtle_shell','elytra'] },
-  { id:'armor_mending',         name:'Mending',               maxLvl:1, bookMult:2, treasure:true,  curse:false, desc:'Repairs with XP orbs',                       items:['helmet','chestplate','leggings','boots','turtle_shell','elytra'] },
-  { id:'binding_curse',         name:'Curse of Binding',      maxLvl:1, bookMult:4, treasure:true,  curse:true,  desc:'Cannot be removed outside creative mode',    items:['helmet','chestplate','leggings','boots','turtle_shell','elytra','pumpkin'] },
-  { id:'vanishing_curse',       name:'Curse of Vanishing',    maxLvl:1, bookMult:1, treasure:true,  curse:true,  desc:'Item disappears on death',                   items:['helmet','chestplate','leggings','boots','turtle_shell','elytra','sword','axe','bow','crossbow','trident','mace','pickaxe','shovel','hoe','fishing_rod','shears','brush','flint_steel','shield','spear','pumpkin'] },
-  // ── Helmet / Turtle Shell specific
-  { id:'respiration',           name:'Respiration',           maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Extends underwater breathing',                items:['helmet','turtle_shell'] },
-  { id:'aqua_affinity',         name:'Aqua Affinity',         maxLvl:1, bookMult:1, treasure:false, curse:false, desc:'Normal mining speed underwater',             items:['helmet','turtle_shell'] },
-  // ── Boots specific
-  { id:'feather_falling',       name:'Feather Falling',       maxLvl:4, bookMult:1, treasure:false, curse:false, desc:'Reduces fall damage',                        items:['boots'] },
-  { id:'depth_strider',         name:'Depth Strider',         maxLvl:3, bookMult:2, treasure:false, curse:false, desc:'Faster underwater movement',                 items:['boots'] },
-  { id:'frost_walker',          name:'Frost Walker',          maxLvl:2, bookMult:2, treasure:true,  curse:false, desc:'Turns water to ice beneath you',             items:['boots'] },
-  { id:'soul_speed',            name:'Soul Speed',            maxLvl:3, bookMult:5, treasure:true,  curse:false, desc:'Faster movement on soul sand / soil',        items:['boots'] },
-  // ── Leggings specific
-  { id:'swift_sneak',           name:'Swift Sneak',           maxLvl:3, bookMult:5, treasure:true,  curse:false, desc:'Faster sneaking speed',                      items:['leggings'] },
-  // ── Sword
-  { id:'sharpness',             name:'Sharpness',             maxLvl:5, bookMult:1, treasure:false, curse:false, desc:'Increases melee damage',                     items:['sword','axe','spear'] },
-  { id:'smite',                 name:'Smite',                 maxLvl:5, bookMult:1, treasure:false, curse:false, desc:'Extra damage to undead mobs',                items:['sword','axe','mace','spear'] },
-  { id:'bane_of_arthropods',    name:'Bane of Arthropods',    maxLvl:5, bookMult:1, treasure:false, curse:false, desc:'Extra damage to spiders & silverfish',       items:['sword','axe','spear'] },
-  { id:'knockback',             name:'Knockback',             maxLvl:2, bookMult:1, treasure:false, curse:false, desc:'Increases melee knockback',                  items:['sword','spear'] },
-  { id:'fire_aspect',           name:'Fire Aspect',           maxLvl:2, bookMult:2, treasure:false, curse:false, desc:'Sets target on fire',                        items:['sword','axe','spear'] },
-  { id:'looting',               name:'Looting',               maxLvl:3, bookMult:2, treasure:false, curse:false, desc:'Increases mob loot drops',                   items:['sword','spear'] },
-  { id:'sweeping_edge',         name:'Sweeping Edge',         maxLvl:3, bookMult:2, treasure:false, curse:false, desc:'Increases sweep attack damage (Java)',        items:['sword'] },
-  { id:'lunge',                 name:'Lunge',                 maxLvl:3, bookMult:2, treasure:false, curse:false, desc:'Increases lunge attack damage & range',       items:['spear'] },
-  { id:'sword_unbreaking',      name:'Unbreaking',            maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Increases item durability',                  items:['sword','axe','bow','crossbow','trident','mace','spear'] },
-  { id:'sword_mending',         name:'Mending',               maxLvl:1, bookMult:2, treasure:true,  curse:false, desc:'Repairs with XP orbs',                      items:['sword','axe','bow','crossbow','trident','mace','spear'] },
-  // ── Axe specific
-  { id:'efficiency',            name:'Efficiency',            maxLvl:5, bookMult:1, treasure:false, curse:false, desc:'Increases tool / axe speed',                 items:['axe','pickaxe','shovel','hoe','shears'] },
-  // ── Bow
-  { id:'power',                 name:'Power',                 maxLvl:5, bookMult:1, treasure:false, curse:false, desc:'Increases arrow damage',                     items:['bow'] },
-  { id:'punch',                 name:'Punch',                 maxLvl:2, bookMult:2, treasure:false, curse:false, desc:'Increases arrow knockback',                  items:['bow'] },
-  { id:'flame',                 name:'Flame',                 maxLvl:1, bookMult:2, treasure:false, curse:false, desc:'Arrows set targets on fire',                 items:['bow'] },
-  { id:'infinity',              name:'Infinity',              maxLvl:1, bookMult:4, treasure:false, curse:false, desc:'Shooting does not consume regular arrows',   items:['bow'] },
-  { id:'bow_unbreaking',        name:'Unbreaking',            maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Increases item durability',                  items:['bow'] },
-  { id:'bow_mending',           name:'Mending',               maxLvl:1, bookMult:2, treasure:true,  curse:false, desc:'Repairs with XP orbs (incompatible with Infinity)', items:['bow'] },
-  // ── Crossbow
-  { id:'multishot',             name:'Multishot',             maxLvl:1, bookMult:2, treasure:false, curse:false, desc:'Shoots 3 arrows simultaneously',             items:['crossbow'] },
-  { id:'quick_charge',          name:'Quick Charge',          maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Reduces crossbow charging time',             items:['crossbow'] },
-  { id:'piercing',              name:'Piercing',              maxLvl:4, bookMult:1, treasure:false, curse:false, desc:'Arrows pass through multiple entities',      items:['crossbow'] },
-  { id:'crossbow_unbreaking',   name:'Unbreaking',            maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Increases item durability',                  items:['crossbow'] },
-  { id:'crossbow_mending',      name:'Mending',               maxLvl:1, bookMult:2, treasure:true,  curse:false, desc:'Repairs with XP orbs',                      items:['crossbow'] },
-  // ── Trident
-  { id:'impaling',              name:'Impaling',              maxLvl:5, bookMult:2, treasure:false, curse:false, desc:'Extra damage to aquatic mobs',               items:['trident'] },
-  { id:'riptide',               name:'Riptide',               maxLvl:3, bookMult:2, treasure:false, curse:false, desc:'Propels player when thrown in rain/water',   items:['trident'] },
-  { id:'loyalty',               name:'Loyalty',               maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Trident returns after throwing',             items:['trident'] },
-  { id:'channeling',            name:'Channeling',            maxLvl:1, bookMult:4, treasure:false, curse:false, desc:'Summons lightning during thunderstorms',      items:['trident'] },
-  { id:'trident_unbreaking',    name:'Unbreaking',            maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Increases item durability',                  items:['trident'] },
-  { id:'trident_mending',       name:'Mending',               maxLvl:1, bookMult:2, treasure:true,  curse:false, desc:'Repairs with XP orbs',                      items:['trident'] },
-  // ── Mace
-  { id:'density',               name:'Density',               maxLvl:5, bookMult:1, treasure:false, curse:false, desc:'Increases smash attack damage',              items:['mace'] },
-  { id:'breach',                name:'Breach',                maxLvl:4, bookMult:2, treasure:false, curse:false, desc:'Reduces target armour effectiveness',        items:['mace'] },
-  { id:'wind_burst',            name:'Wind Burst',            maxLvl:3, bookMult:2, treasure:false, curse:false, desc:'Launches you upward on hit',                 items:['mace'] },
-  // ── Mining tools
-  { id:'pick_efficiency',       name:'Efficiency',            maxLvl:5, bookMult:1, treasure:false, curse:false, desc:'Increases mining speed',                     items:['pickaxe','shovel','hoe'] },
-  { id:'silk_touch',            name:'Silk Touch',            maxLvl:1, bookMult:4, treasure:false, curse:false, desc:'Mined blocks drop themselves',               items:['pickaxe','shovel','axe','hoe','shears'] },
-  { id:'fortune',               name:'Fortune',               maxLvl:3, bookMult:2, treasure:false, curse:false, desc:'Increases block drops',                      items:['pickaxe','shovel','axe','hoe'] },
-  { id:'pick_unbreaking',       name:'Unbreaking',            maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Increases item durability',                  items:['pickaxe','shovel','hoe','shears','brush','flint_steel'] },
-  { id:'pick_mending',          name:'Mending',               maxLvl:1, bookMult:2, treasure:true,  curse:false, desc:'Repairs with XP orbs',                      items:['pickaxe','shovel','hoe','shears','brush','flint_steel'] },
-  // ── Fishing rod
-  { id:'luck_of_the_sea',       name:'Luck of the Sea',       maxLvl:3, bookMult:2, treasure:false, curse:false, desc:'Increases rate of treasure catches',         items:['fishing_rod'] },
-  { id:'lure',                  name:'Lure',                  maxLvl:3, bookMult:2, treasure:false, curse:false, desc:'Decreases wait time when fishing',           items:['fishing_rod'] },
-  { id:'rod_unbreaking',        name:'Unbreaking',            maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Increases item durability',                  items:['fishing_rod'] },
-  { id:'rod_mending',           name:'Mending',               maxLvl:1, bookMult:2, treasure:true,  curse:false, desc:'Repairs with XP orbs',                      items:['fishing_rod'] },
-  // ── Shield
-  { id:'shield_unbreaking',     name:'Unbreaking',            maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Increases item durability',                  items:['shield'] },
-  { id:'shield_mending',        name:'Mending',               maxLvl:1, bookMult:2, treasure:true,  curse:false, desc:'Repairs with XP orbs',                      items:['shield'] },
-  // ── Elytra
-  { id:'elytra_unbreaking',     name:'Unbreaking',            maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Increases item durability',                  items:['elytra'] },
-  { id:'elytra_mending',        name:'Mending',               maxLvl:1, bookMult:2, treasure:true,  curse:false, desc:'Repairs with XP orbs',                      items:['elytra'] },
-  // ── Carrot on a Stick / Warped Fungus on a Stick
-  { id:'coas_unbreaking',       name:'Unbreaking',            maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Increases item durability',                  items:['carrot_stick','warped_stick'] },
-  { id:'coas_mending',          name:'Mending',               maxLvl:1, bookMult:2, treasure:true,  curse:false, desc:'Repairs with XP orbs',                      items:['carrot_stick','warped_stick'] },
-  // ── Turtle Shell extra
-  { id:'turtle_unbreaking',     name:'Unbreaking',            maxLvl:3, bookMult:1, treasure:false, curse:false, desc:'Increases item durability',                  items:['turtle_shell'] },
-];
-
-// Build incompat lookup: key → Set of incompatible keys
-const INCOMPAT_MAP = (() => {
-  const m = {};
-  for (const grp of INCOMPAT_GROUPS) {
-    for (const a of grp) {
-      if (!m[a]) m[a] = new Set();
-      for (const b of grp) if (b !== a) m[a].add(b);
-    }
-  }
-  return m;
-})();
-
-function enchantsForItem(itemId) {
-  const raw = ALL_ENCHANTS.filter(e => e.items.includes(itemId));
-  // Deduplicate by display identity (same name / maxLvl / bookMult / treasure / curse)
-  const seen = new Map();
-  for (const e of raw) {
-    const key = `${e.name}|${e.maxLvl}|${e.bookMult}|${e.treasure}|${e.curse}`;
-    if (!seen.has(key)) seen.set(key, e);
-  }
-  const all = [...seen.values()];
-  // Always sort curses to the bottom
-  return all.sort((a, b) => {
-    if (a.curse === b.curse) return 0;
-    return a.curse ? 1 : -1;
-  });
-}
-
-// ═══════════════════════════════════════════════════════════
-// APP STATE
-// ═══════════════════════════════════════════════════════════
-let selectedItem    = null;
-let selectedEnchants = {};   // name → level
-let optimMode       = 'xp';
-let displayEnchants = [];    // enchants shown for current item
-
-// ═══════════════════════════════════════════════════════════
-// ITEM SELECTION
-// ═══════════════════════════════════════════════════════════
-function selectItem(id) {
-  selectedItem = id;
-  document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
-  document.getElementById('card-' + id)?.classList.add('selected');
-  selectedEnchants = {};
-  displayEnchants  = enchantsForItem(id);
-
-  const panel = document.getElementById('enchant-panel');
-  panel.style.display = 'block';
-  panel.classList.remove('hiding');
-  document.getElementById('results-panel').style.display = 'none';
-
-  renderEnchantTable();
-  updateCalcBtn();
-
-  // Use window.scrollTo with an explicit Y coordinate — more reliable than
-  // scrollIntoView on deployed/HTTPS environments where smooth behaviour
-  // can be silently ignored by the browser before layout settles.
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        const top = panel.getBoundingClientRect().top + window.scrollY - 20;
-        window.scrollTo({ top, behavior: 'smooth' });
-      }, 80);
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════════════════
-// OPTIMISATION MODE
-// ═══════════════════════════════════════════════════════════
-function setMode(m) {
-  optimMode = m;
-  document.getElementById('mode-xp').classList.toggle('active', m === 'xp');
-  document.getElementById('mode-pwp').classList.toggle('active', m === 'pwp');
-}
-
-// ═══════════════════════════════════════════════════════════
-// ENCHANTMENT TABLE
-// ═══════════════════════════════════════════════════════════
-function renderEnchantTable() {
-  const greyed  = incompatibleNames();
-  const tbody   = document.getElementById('enchant-tbody');
-
-  // If the table already has the right number of rows, update in-place
-  // to avoid re-triggering CSS animations on untouched rows.
-  const existingRows = tbody.querySelectorAll('tr.enchant-row');
-  if (existingRows.length === displayEnchants.length) {
-    displayEnchants.forEach((e, rowIdx) => {
-      const row     = existingRows[rowIdx];
-      const disabled = greyed.has(e.name);
-      const selLvl   = selectedEnchants[e.name] || 0;
-
-      // Update row classes
-      row.classList.toggle('disabled-row',  disabled);
-      row.classList.toggle('selected-row',  selLvl > 0);
-
-      // Update each level button
-      row.querySelectorAll('.lvl-btn').forEach((btn, i) => {
-        const l = i + 1;
-        const nowActive = selLvl === l;
-        const wasActive = btn.classList.contains('active');
-
-        btn.disabled = disabled;
-
-        if (nowActive && !wasActive) {
-          // Newly activated — add class (animation fires once)
-          btn.classList.add('active');
-        } else if (!nowActive && wasActive) {
-          btn.classList.remove('active');
-        }
-        // If unchanged, don't touch it — animation won't re-fire
-      });
-    });
-    return;
-  }
-
-  // First render (or item changed) — build from scratch
-  tbody.innerHTML = displayEnchants.map(e => {
-    const disabled   = greyed.has(e.name);
-    const selLvl     = selectedEnchants[e.name] || 0;
-    const lvlButtons = Array.from({ length: e.maxLvl }, (_, i) => i + 1).map(l =>
-      `<button class="lvl-btn${selLvl === l ? ' active' : ''}"
-               onclick="toggleLvl('${e.name}', ${l})"
-               ${disabled ? 'disabled' : ''}>${roman(l)}</button>`
-    ).join('');
-
-    return `<tr class="enchant-row${disabled ? ' disabled-row' : ''}${selLvl > 0 ? ' selected-row' : ''}">
-      <td>
-        <div class="enchant-name">
-          ${e.name}
-          ${e.treasure ? '<span class="badge-treasure">Treasure</span>' : ''}
-          ${e.curse    ? '<span class="badge-curse">Curse</span>'       : ''}
-        </div>
-        <div class="enchant-desc">${e.desc}</div>
-      </td>
-      <td><div class="level-selector">${lvlButtons}</div></td>
-    </tr>`;
-  }).join('');
-}
-
-function toggleLvl(name, lvl) {
-  if (selectedEnchants[name] === lvl) delete selectedEnchants[name];
-  else selectedEnchants[name] = lvl;
-  renderEnchantTable();
-  updateCalcBtn();
-}
-
-function incompatibleNames() {
-  const out = new Set();
-  for (const name of Object.keys(selectedEnchants)) {
-    const key = NAME_KEY[name];
-    if (!key || !INCOMPAT_MAP[key]) continue;
-    for (const badKey of INCOMPAT_MAP[key]) {
-      for (const e of displayEnchants) {
-        if (NAME_KEY[e.name] === badKey) out.add(e.name);
-      }
-    }
-  }
-  return out;
-}
-
-function updateCalcBtn() {
-  document.getElementById('calc-btn').disabled =
-    Object.keys(selectedEnchants).length === 0;
-}
-
-function roman(n) { return ['I','II','III','IV','V'][n - 1] ?? String(n); }
-
-// ═══════════════════════════════════════════════════════════
-// ANVIL MATHS  (Java Edition)
-//
-// Total cost of one anvil operation:
-//   Σ(bookMult × finalLevel) for each enchant added/upgraded
-//   + (2^pwp_left  − 1)   ← left-slot penalty
-//   + (2^pwp_right − 1)   ← right-slot penalty
-//
-// Resulting pwp = max(pwp_left, pwp_right) + 1
-// Hard cap: any operation > 39 levels → "Too Expensive!"
-// ═══════════════════════════════════════════════════════════
-function lvlToXP(l) {
-  if (l <= 16) return l * l + 6 * l;
-  if (l <= 31) return Math.floor(2.5 * l * l - 40.5 * l + 360);
-  return Math.floor(4.5 * l * l - 162.5 * l + 2220);
-}
-
-function pwpCost(p) { return Math.pow(2, p) - 1; }
-
-function enchCostByMult(mult, lvl) {
-  return mult * lvl;
-}
-
-// Get the bookMult for an enchant name from the master list
-function getBookMult(name) {
-  // Search ALL_ENCHANTS by name — use first match
-  const e = ALL_ENCHANTS.find(x => x.name === name);
-  return e ? e.bookMult : 1;
-}
-
-function enchCost(name, lvl) {
-  return getBookMult(name) * lvl;
-}
-
-function enchCostTotal(enchants) {
-  return Object.entries(enchants).reduce((s, [n, l]) => s + enchCost(n, l), 0);
-}
-
-// Merge sacrifice node into target node — pure cost calculation
-function mergeNodes(target, sacrifice) {
-  let ec = 0;
-  const result = { ...target.enchants };
-  for (const [n, l] of Object.entries(sacrifice.enchants)) {
-    if ((target.enchants[n] ?? 0) < l) { ec += enchCost(n, l); result[n] = l; }
-  }
-  return {
-    levelCost:      ec + pwpCost(target.pwp) + pwpCost(sacrifice.pwp),
-    resultPwp:      Math.max(target.pwp, sacrifice.pwp) + 1,
-    resultEnchants: result,
-  };
-}
-
-function descEnchants(enchants) {
-  return Object.entries(enchants).map(([n, l]) => `${n} ${roman(l)}`).join(' + ');
-}
-
-// ═══════════════════════════════════════════════════════════
-// OPTIMISER — runs in a Web Worker so the UI never freezes.
-//
-// The algorithm is the same brute-force pool approach as
-// iamcal/enchant-order, but with memoization: we canonicalize
-// each pool state as a sorted string key and skip any state
-// we've already evaluated. This cuts the actual work from
-// millions of calls down to thousands even for 8 enchants.
-// ═══════════════════════════════════════════════════════════
-
-// The worker code is inlined as a Blob so no separate file is needed.
-const WORKER_SRC = `
-// ── Maths (duplicated inside worker, no DOM access) ──────
-function pwpCost(p) { return Math.pow(2, p) - 1; }
-
-function getBookMult(name, enchantData) {
-  const e = enchantData.find(x => x.name === name);
-  return e ? e.bookMult : 1;
-}
-
-function enchCost(name, lvl, enchantData) {
-  return getBookMult(name, enchantData) * lvl;
-}
-
-function mergeNodes(target, sacrifice, enchantData) {
-  let ec = 0;
-  const result = { ...target.enchants };
-  for (const [n, l] of Object.entries(sacrifice.enchants)) {
-    if ((target.enchants[n] ?? 0) < l) {
-      ec += enchCost(n, l, enchantData);
-      result[n] = l;
-    }
-  }
-  return {
-    levelCost:      ec + pwpCost(target.pwp) + pwpCost(sacrifice.pwp),
-    resultPwp:      Math.max(target.pwp, sacrifice.pwp) + 1,
-    resultEnchants: result,
-  };
-}
-
-function descEnchants(enchants) {
-  return Object.entries(enchants).map(([n, l]) => {
-    const r = ['I','II','III','IV','V'][l - 1] ?? String(l);
-    return n + ' ' + r;
-  }).join(' + ');
-}
-
-// Canonical key for a pool state — sorted so order doesn't matter
-function poolKey(pool) {
-  return pool.map(n => {
-    const ks = Object.entries(n.enchants).sort().map(([k,v])=>k+':'+v).join(',');
-    return (n.isItem ? 'ITEM' : 'book') + '{' + ks + '}p' + n.pwp;
-  }).sort().join('|');
-}
-
-function isBetter(a, b, mode) {
-  if (a.hasTooExpensive !== b.hasTooExpensive) return !a.hasTooExpensive;
-  if (mode === 'xp') return a.totalLevelCost < b.totalLevelCost;
-  if (a.finalPwp !== b.finalPwp) return a.finalPwp < b.finalPwp;
-  return a.totalLevelCost < b.totalLevelCost;
-}
-
-self.onmessage = function(e) {
-  const { sel, mode, iname, enchantData } = e.data;
-
-  const books = Object.entries(sel).map(([n, l]) => ({
-    isItem: false, pwp: 0, enchants: { [n]: l }, steps: [],
-  }));
-
-  const itemNode = { isItem: true, pwp: 0, enchants: {}, steps: [] };
-
-  let best = null;
-  const visited = new Set();
-
-  function solve(pool) {
-    const key = poolKey(pool);
-    if (visited.has(key)) return;
-    visited.add(key);
-
-    if (pool.length === 1) {
-      const node = pool[0];
-      const totalCost = node.steps.reduce((s, st) => s + st.levelCost, 0);
-      const hasTooExpensive = node.steps.some(s => s.tooExpensive);
-      const result = { steps: node.steps, totalLevelCost: totalCost, finalPwp: node.pwp, hasTooExpensive };
-      if (!best || isBetter(result, best, mode)) best = result;
-      return;
-    }
-
-    for (let i = 0; i < pool.length; i++) {
-      for (let j = 0; j < pool.length; j++) {
-        if (i === j) continue;
-        const target   = pool[i];
-        const sacrifice = pool[j];
-        if (sacrifice.isItem) continue;
-
-        const { levelCost, resultPwp, resultEnchants } = mergeNodes(target, sacrifice, enchantData);
-
-        const stepDesc = target.isItem
-          ? 'Apply [book:' + descEnchants(sacrifice.enchants) + '] to [item:' + iname + ']'
-          : 'Combine [book:' + descEnchants(target.enchants) + '] + [book:' + descEnchants(sacrifice.enchants) + '] = [book:' + descEnchants(resultEnchants) + ']';
-
-        const newStep = {
-          levelCost, resultPwp, resultEnchants,
-          tooExpensive: levelCost > 39,
-          isItemStep: target.isItem,
-          targetDesc: target.isItem ? iname : descEnchants(target.enchants),
-          sacrificeDesc: descEnchants(sacrifice.enchants),
-          resultDesc: descEnchants(resultEnchants),
-          rawDesc: stepDesc,
-        };
-
-        const merged = {
-          isItem: target.isItem,
-          pwp: resultPwp,
-          enchants: resultEnchants,
-          steps: [...target.steps, ...sacrifice.steps, newStep],
-        };
-
-        const newPool = pool.filter((_, idx) => idx !== i && idx !== j);
-        newPool.push(merged);
-        solve(newPool);
-      }
-    }
-  }
-
-  solve([itemNode, ...books]);
-  self.postMessage(best);
-};
-`;
-
-let activeWorker = null;
-let loadingInterval = null;
-
-const LOADING_MESSAGES = [
-  'Crunching the numbers…',
-  'Consulting the enchanting table…',
-  'Bribing the librarian villager…',
-  'Checking all possible anvil sequences…',
-  'Avoiding "Too Expensive"…',
-  'Running through the combinations…',
-  'Calculating prior work penalties…',
-  'Finding the cheapest path…',
-  'Looking for therapy...',
-  'Optimising your XP spend…',
-  'Almost there, probably…',
-  'Thanking the players of OOW...',
-  'The anvil is thinking…',
-  'Sorting enchants by cost…',
-  'Mapping the merge tree…',
-  'Thank you, Arya',
-  'Counting experience bottles…',
-  'Negotiating with the RNG…',
-];
-
-function pickLoadingMessage(exclude) {
-  const pool = LOADING_MESSAGES.filter(m => m !== exclude);
-  return pool[Math.floor(Math.random() * pool.length)];
-}
-
-function startLoadingMessages() {
-  const el = document.querySelector('#calc-loading span');
-  let current = pickLoadingMessage('');
-  el.textContent = current;
-  loadingInterval = setInterval(() => {
-    current = pickLoadingMessage(current);
-    el.style.opacity = '0';
-    setTimeout(() => {
-      el.textContent = current;
-      el.style.opacity = '1';
-    }, 300);
-  }, 5000);
-}
-
-function stopLoadingMessages() {
-  clearInterval(loadingInterval);
-  loadingInterval = null;
-  const el = document.querySelector('#calc-loading span');
-  if (el) { el.style.opacity = '1'; el.textContent = ''; }
-}
-
-function optimise(sel, mode) {
-  // Kept for compatibility — actual work done in worker
-  return null;
-}
-
-// ═══════════════════════════════════════════════════════════
-// CALCULATE & DISPLAY RESULTS
-// ═══════════════════════════════════════════════════════════
-function fireRestart(btn) {
-  btn.classList.remove('fired');
-  void btn.offsetWidth;
-  btn.classList.add('fired');
-
-  // Kill any in-progress calculation
-  if (activeWorker) { activeWorker.terminate(); activeWorker = null; }
-  stopLoadingMessages();
-
-  const resultsPanel = document.getElementById('results-panel');
-  const enchantPanel = document.getElementById('enchant-panel');
-  resultsPanel.classList.add('hiding');
-
-  setTimeout(() => {
-    resultsPanel.style.display = 'none';
-    resultsPanel.classList.remove('hiding');
-    enchantPanel.classList.add('hiding');
-
-    setTimeout(() => {
-      enchantPanel.style.display = 'none';
-      enchantPanel.classList.remove('hiding');
-
-      selectedItem     = null;
-      selectedEnchants = {};
-      displayEnchants  = [];
-      document.getElementById('enchant-tbody').innerHTML = '';
-      updateCalcBtn();
-      document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 180);
-  }, 200);
-}
-
-function calculate() {
-  const btn     = document.getElementById('calc-btn');
-  const loading = document.getElementById('calc-loading');
-
-  btn.classList.remove('fired');
-  void btn.offsetWidth;
-  btn.classList.add('fired');
-
-  btn.style.display = 'none';
-  loading.classList.add('visible');
-  startLoadingMessages();
-
-  // Kill any previous worker
-  if (activeWorker) { activeWorker.terminate(); activeWorker = null; }
-
-  // Build a deduplicated enchant data payload for the worker
-  const enchantData = ALL_ENCHANTS.map(e => ({ name: e.name, bookMult: e.bookMult }));
-  const iname = getAllItems().find(i => i.id === selectedItem)?.name ?? 'item';
-
-  const blob   = new Blob([WORKER_SRC], { type: 'application/javascript' });
-  const workerURL = URL.createObjectURL(blob);
-  activeWorker = new Worker(workerURL);
-  URL.revokeObjectURL(workerURL);
-
-  activeWorker.onmessage = (e) => {
-    activeWorker = null;
-    stopLoadingMessages();
-    loading.classList.remove('visible');
-    btn.style.display = '';
-
-    const result = e.data;
-    if (!result) return;
-
-    // Re-render step descriptions as HTML (worker sent plain text markers)
-    result.steps = result.steps.map(s => ({
-      ...s,
-      description: s.isItemStep
-        ? `Apply <span class="hi-book">${s.sacrificeDesc} book</span> to <span class="hi-item">${s.targetDesc}</span>`
-        : `Combine <span class="hi-book">${s.targetDesc} book</span> + <span class="hi-book">${s.sacrificeDesc} book</span> → <strong>${s.resultDesc} book</strong>`,
-    }));
-
-    showResults(result);
-  };
-
-  activeWorker.onerror = () => {
-    activeWorker = null;
-    stopLoadingMessages();
-    loading.classList.remove('visible');
-    btn.style.display = '';
-  };
-
-  activeWorker.postMessage({ sel: selectedEnchants, mode: optimMode, iname, enchantData });
-}
-
-function showResults(result) {
-  const panel  = document.getElementById('results-panel');
-  const iname  = getAllItems().find(i => i.id === selectedItem)?.name ?? selectedItem;
-  const modeStr = optimMode === 'xp' ? 'minimum total XP' : 'minimum prior work penalty';
-
-  panel.style.display = 'block';
-  panel.classList.remove('hiding');
-  document.getElementById('result-summary').textContent =
-    `Optimal order for ${iname} · optimised for ${modeStr}`;
-
-  document.getElementById('steps-list').innerHTML = result.steps.map((s, i) => `
-    <div class="step-card" style="animation-delay:${i * 60}ms">
-      <div class="snum">${i + 1}</div>
-      <div class="sdesc">${s.description}</div>
-      <div class="scost">
-        <div class="scost-lvl">${s.levelCost} lvls</div>
-        <div class="scost-xp">${lvlToXP(s.levelCost).toLocaleString()} XP</div>
-        ${s.tooExpensive ? '<div class="scost-warn">⚠ TOO EXPENSIVE</div>' : ''}
-      </div>
-    </div>
-  `).join('');
-
-  document.getElementById('totals-card').innerHTML = `
-    <div class="total-stat">
-      <div class="total-val">${result.totalLevelCost}</div>
-      <div class="total-lbl">Total Levels</div>
-    </div>
-    <div class="total-div"></div>
-    <div class="total-stat">
-      <div class="total-val">${lvlToXP(result.totalLevelCost).toLocaleString()}</div>
-      <div class="total-lbl">Total XP</div>
-    </div>
-    <div class="total-div"></div>
-    <div class="total-stat">
-      <div class="total-val">${result.steps.length}</div>
-      <div class="total-lbl">Anvil Uses</div>
-    </div>
-    <div class="total-div"></div>
-    <div class="total-stat">
-      <div class="total-val">${result.finalPwp}</div>
-      <div class="total-lbl">Final Work Penalty</div>
-    </div>
-  `;
-
-  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-// ═══════════════════════════════════════════════════════════
-// SEARCH
-// ═══════════════════════════════════════════════════════════
-function filterItems(query) {
-  const q = query.trim().toLowerCase();
-  const clearBtn = document.getElementById('search-clear');
-  clearBtn.classList.toggle('visible', q.length > 0);
-
-  for (const items of Object.values(ITEM_GROUPS)) {
-    for (const item of items) {
-      const card = document.getElementById('card-' + item.id);
-      if (!card) continue;
-      const matches = !q || item.name.toLowerCase().includes(q);
-      card.classList.toggle('search-hidden', !matches);
-    }
-  }
-}
-
-function clearSearch() {
-  const input = document.getElementById('item-search');
-  input.value = '';
-  filterItems('');
-  input.focus();
-}
-
-// ═══════════════════════════════════════════════════════════
-// INIT — load icons first, then render grids
-// ═══════════════════════════════════════════════════════════
-loadIcons();
-buildItemGrids();
-</script>
 </body>
 </html>
