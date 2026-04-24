@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nether Coordinate Converter - MCUtils</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --surface3: #252a3a;
+    --border: #2e3450;
+    --border2: #3d4460;
+    --accent: #6ee7b7;
+    --accent2: #34d399;
+    --accent3: #059669;
+    --gold: #fbbf24;
+    --blue: #60a5fa;
+    --purple: #a78bfa;
+    --red: #f87171;
+    --orange: #fb923c;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --radius: 14px;
+    --radius-sm: 9px;
+    --nether: #fb923c;
+    --nether-glow: rgba(251,146,60,.12);
+    --overworld: #6ee7b7;
+    --overworld-glow: rgba(110,231,183,.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(110,231,183,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(110,231,183,.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* Glow blob */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -180px; left: 50%; transform: translateX(-50%);
+    width: 700px; height: 500px;
+    background: radial-gradient(ellipse at center, rgba(251,146,60,.05) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrapper {
+    position: relative; z-index: 1;
+    max-width: 760px; margin: 0 auto;
+    padding: 0 24px 100px;
+  }
+
+  /* ── HEADER ─────────────────────────────────── */
+  header {
+    padding: 64px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .back-nav {
+    padding: 20px 0 0;
+  }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text3); font-size: 13px; font-weight: 600;
+    text-decoration: none; letter-spacing: .01em;
+    transition: color .15s;
+  }
+  .back-link:hover { color: var(--accent); }
+
+  /* Prevent page scroll when hovering a focused coord input */
+  body.scroll-locked { overflow: hidden; }
+
+  .site-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(251,146,60,.07);
+    border: 1px solid rgba(251,146,60,.2);
+    border-radius: 100px; padding: 5px 14px;
+    font-size: 10px; font-weight: 800;
+    letter-spacing: .18em; text-transform: uppercase;
+    color: var(--orange); margin-bottom: 20px;
+  }
+
+  .site-badge span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--orange);
+    animation: pulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .4; transform: scale(.7); }
+  }
+
+  h1 {
+    font-size: clamp(30px, 6vw, 50px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 14px;
+    color: #ffffff;
+  }
+
+  .tagline {
+    font-size: 15px;
+    color: var(--text3);
+    font-weight: 400;
+    line-height: 1.6;
+    max-width: 480px;
+  }
+
+  /* ── RULE CALLOUT ────────────────────────────── */
+  .rule-callout {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .rule-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+
+  .rule-text {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  .rule-text strong {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  /* ── CONVERTER LAYOUT ───────────────────────── */
+  .converter {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 560px) {
+    .converter {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ── DIMENSION PANELS ───────────────────────── */
+  .dim-panel {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 26px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+
+  .dim-panel.overworld {
+    --panel-color: var(--overworld);
+    --panel-glow: var(--overworld-glow);
+  }
+
+  .dim-panel.nether {
+    --panel-color: var(--nether);
+    --panel-glow: var(--nether-glow);
+  }
+
+  .dim-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--panel-color);
+  }
+
+  .dim-panel::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at top left, var(--panel-glow), transparent 65%);
+    pointer-events: none;
+  }
+
+  .dim-label {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 22px;
+  }
+
+  .dim-label-icon {
+    font-size: 22px;
+  }
+
+  .dim-label-text {
+    font-size: 11px; font-weight: 800;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--panel-color);
+  }
+
+  .coord-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .coord-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .coord-field label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .coord-field input {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 14px 16px;
+    width: 100%;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    -moz-appearance: textfield;
+    letter-spacing: -.01em;
+  }
+
+  .coord-field input::-webkit-inner-spin-button,
+  .coord-field input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .coord-field input:focus {
+    border-color: var(--panel-color);
+    box-shadow: 0 0 0 3px rgba(var(--panel-rgb, 110,231,183), .12);
+  }
+
+  .dim-panel.overworld .coord-field input:focus {
+    box-shadow: 0 0 0 3px rgba(110,231,183,.12);
+  }
+
+  .dim-panel.nether .coord-field input:focus {
+    box-shadow: 0 0 0 3px rgba(251,146,60,.12);
+  }
+
+  .coord-field input.output {
+    cursor: default;
+    color: var(--panel-color);
+    background: var(--surface3);
+    border-color: var(--border2);
+    user-select: all;
+  }
+
+  .coord-field input.output:focus {
+    border-color: var(--panel-color);
+  }
+
+  /* ── DONATE ─────────────────────────────────── */
+
+  /* ── WORLD BORDER WARNING ────────────────────── */
+  .border-warning {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: rgba(251,146,60,.08);
+    border: 1.5px solid rgba(251,146,60,.25);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--orange);
+    margin-top: -10px;
+    margin-bottom: 20px;
+  }
+  .border-warning.visible { display: flex; }
+
+  /* ── COPY HINT ───────────────────────────────── */
+  .copy-hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: -10px;
+    margin-bottom: 24px;
+  }
+
+  /* ── DONATE ─────────────────────────────────── */
+  #donate-corner {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    z-index: 999;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    opacity: .65; transition: opacity .2s;
+  }
+  #donate-corner:hover { opacity: 1; }
+  #donate-corner-label {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text3);
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<nav class="back-nav">
+  <a class="back-link" href="index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    MC Utils
+  </a>
+</nav>
+
+  <header>
+    <div class="site-badge"><span></span> Navigation</div>
+    <h1>Nether Coordinate Converter</h1>
+    <p class="tagline">Convert X/Z coordinates between the Overworld and the Nether in both directions. Great for finding your portal locations.</p>
+  </header>
+
+  <!-- CONVERTER -->
+  <div class="converter">
+
+    <!-- Overworld Panel -->
+    <div class="dim-panel overworld" id="ow-panel">
+      <div class="dim-label">
+        <div class="dim-label-icon">
+          <img id="overworld-icon" src="icons/overworld.png" alt="" style="width:22px;height:22px;object-fit:contain;vertical-align:middle;"
+               onerror="this.style.display='none';document.getElementById('overworld-emoji').style.display='inline'">
+          <span id="overworld-emoji" style="display:none;font-size:22px;">🌍</span>
+        </div>
+        <div class="dim-label-text">Overworld</div>
+      </div>
+      <div class="coord-row">
+        <div class="coord-field">
+          <label>X coordinate</label>
+          <input type="number" id="ow-x" placeholder="0" oninput="convertFrom('overworld')">
+        </div>
+        <div class="coord-field">
+          <label>Z coordinate</label>
+          <input type="number" id="ow-z" placeholder="0" oninput="convertFrom('overworld')">
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Nether Panel -->
+    <div class="dim-panel nether" id="nether-panel">
+      <div class="dim-label">
+        <div class="dim-label-icon">
+          <img id="nether-icon" src="icons/nether.png" alt="" style="width:22px;height:22px;object-fit:contain;vertical-align:middle;"
+               onerror="this.style.display='none';document.getElementById('nether-emoji').style.display='inline'">
+          <span id="nether-emoji" style="display:none;font-size:22px;">🔥</span>
+        </div>
+        <div class="dim-label-text">The Nether</div>
+      </div>
+      <div class="coord-row">
+        <div class="coord-field">
+          <label>X coordinate</label>
+          <input type="number" id="nether-x" placeholder="0" oninput="convertFrom('nether')">
+        </div>
+        <div class="coord-field">
+          <label>Z coordinate</label>
+          <input type="number" id="nether-z" placeholder="0" oninput="convertFrom('nether')">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="border-warning" id="border-warning">
+    ⚠️ Clamped to world border limit.
+  </div>
+
+  <p class="copy-hint">Click any result to select and copy.</p>
+
+  <div class="rule-callout">
+    <div class="rule-icon">🌀</div>
+    <div class="rule-text">
+      <strong>The Nether Scale Rule:</strong> The Nether is 8× smaller than the Overworld horizontally.
+      One block of travel in the Nether equals 8 blocks in the Overworld.
+      Y coordinates are <strong>not affected</strong> by this ratio.
+    </div>
+  </div>
+
+</div>
+
+<!-- PAYPAL DONATE -->
+<div id="donate-corner">
+  <div id="donate-corner-label">Support the project</div>
+  <div id="donate-button"></div>
+</div>
+
+<script src="https://www.paypalobjects.com/donate/sdk/donate-sdk.js" charset="UTF-8"></script>
+<script>
+PayPal.Donation.Button({
+  env: 'production',
+  hosted_button_id: 'AN9Y7K5DKLL7Q',
+  image: {
+    src: 'https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif',
+    alt: 'Donate with PayPal button',
+    title: 'PayPal - The safer, easier way to pay online!',
+  }
+}).render('#donate-button');
+</script>
+
+<script>
+  const owX = document.getElementById('ow-x');
+  const owZ = document.getElementById('ow-z');
+  const netherX = document.getElementById('nether-x');
+  const netherZ = document.getElementById('nether-z');
+  const warning = document.getElementById('border-warning');
+
+  // Minecraft world border limits
+  const OW_MAX = 29999984;
+  const NETHER_MAX = Math.floor(OW_MAX / 8); // 3749998
+
+  let updating = false;
+
+  function clamp(val, max) {
+    return Math.max(-max, Math.min(max, val));
+  }
+
+  function convertFrom(direction) {
+    if (updating) return;
+    updating = true;
+
+    let clamped = false;
+
+    if (direction === 'overworld') {
+      const rawX = owX.value !== '' ? parseFloat(owX.value) : null;
+      const rawZ = owZ.value !== '' ? parseFloat(owZ.value) : null;
+
+      if (rawX !== null) {
+        const cx = clamp(Math.round(rawX), OW_MAX);
+        if (cx !== Math.round(rawX)) clamped = true;
+        netherX.value = Math.round(cx / 8);
+      } else { netherX.value = ''; }
+
+      if (rawZ !== null) {
+        const cz = clamp(Math.round(rawZ), OW_MAX);
+        if (cz !== Math.round(rawZ)) clamped = true;
+        netherZ.value = Math.round(cz / 8);
+      } else { netherZ.value = ''; }
+
+    } else {
+      const rawX = netherX.value !== '' ? parseFloat(netherX.value) : null;
+      const rawZ = netherZ.value !== '' ? parseFloat(netherZ.value) : null;
+
+      if (rawX !== null) {
+        const cx = clamp(Math.round(rawX), NETHER_MAX);
+        if (cx !== Math.round(rawX)) clamped = true;
+        owX.value = Math.round(cx * 8);
+      } else { owX.value = ''; }
+
+      if (rawZ !== null) {
+        const cz = clamp(Math.round(rawZ), NETHER_MAX);
+        if (cz !== Math.round(rawZ)) clamped = true;
+        owZ.value = Math.round(cz * 8);
+      } else { owZ.value = ''; }
+    }
+
+    warning.classList.toggle('visible', clamped);
+    updating = false;
+  }
+
+  // ── SCROLL LOCK ──────────────────────────────────────────────────────────
+  // When a coord input is focused and the mouse is hovering over it,
+  // lock page scroll so the scroll-to-increment feature works on small screens.
+  const coordInputs = document.querySelectorAll('.coord-field input');
+  let focusedInput = null;
+
+  coordInputs.forEach(input => {
+    input.addEventListener('focus', () => { focusedInput = input; });
+    input.addEventListener('blur',  () => {
+      focusedInput = null;
+      document.body.classList.remove('scroll-locked');
+    });
+    input.addEventListener('mouseenter', () => {
+      if (focusedInput === input) document.body.classList.add('scroll-locked');
+    });
+    input.addEventListener('mouseleave', () => {
+      document.body.classList.remove('scroll-locked');
+    });
+  });
+</script>
+
+</body>
+</html>
